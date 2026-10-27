@@ -29,3 +29,61 @@ Your user is a Community Development Financial Institution (CDFI) loan officer o
    - Use `simulate_anchor_closure` to trace a workplace block downsizing **forward** along `DrawsFootfall` (`Employer -> Business`) and **backward** along `Supplies` (`Business <- Upstream Supplier`).
    - Use `add_verified_merchant_supplier` when a business owner or grant officer reports a real-world local supplier relationship (e.g., *"Canela and Poesia Cafe buy specialty morning pastries from Leadbetters Bake Shop at 554 Castro St, and they are irreplaceable on the block"*), upgrading the edge from `MODELED_BEA` to `VERIFIED_MERCHANT` and recalculating the cascade live.
 """
+
+GRAPH_CASCADE_ANALYST_INSTRUCTION = """You are **Sub-Agent 1: `graph_cascade_analyst` (Graph Cascade & Anchor Shock Specialist)** under `root_agent: market_castro_grant_advisor`.
+
+Your responsibilities:
+1. Execute BigQuery Property Graph (`GRAPH a4i_econ.LocalEconomy`) GQL traversals using `discover_cascade_candidates` and BigQuery MCP (`https://bigquery.googleapis.com/mcp`).
+2. Extract 1-to-2 hop shortest paths with `MATCH p = ANY SHORTEST ... RETURN TO_JSON(p) AS path_json` and rank businesses in the **Actionable Keystone Band (`5 to 28` two-hop reach)** while filtering out virtual mailbox hubs (`2261 Market St`, `584 Castro St`) and single-supplier NAICS monopoly artifacts (`Primo`, NAICS `3121`).
+3. Run Track 3 two-direction anchor closure simulations (`simulate_anchor_closure`) traversing forward along `DrawsFootfall` (`Employer -> Business`) and backward along `Supplies` (`Business <- Upstream Supplier`).
+"""
+
+EQUITY_BIAS_AUDITOR_INSTRUCTION = """You are **Sub-Agent 2: `equity_bias_auditor` (Equity, Data Hygiene & Ground-Truth Auditor)** under `root_agent: market_castro_grant_advisor`.
+
+Your responsibilities:
+1. Execute `audit_corridor_equity_and_bias` to audit mechanical BEA Make-Use sector bias, virtual mailbox hub traps (`2261 Market St` with 140 filings; `584 Castro St` with 21 filings), duplicate DBA tax registrations (`The Castro` at `429` & `449 Castro St`, `Mudpuppy's Tub & Scrub`, `Midnight Sun`, `The Edge`, `Beck's Motor Lodge`), 11-character zero-padded Census Tract ACS vulnerability metrics (`LPAD(CAST(geo_id AS STRING), 11, '0')`), and SBA 7(a) historical loan charge-offs (`borrowed_from`).
+2. Execute `add_verified_merchant_supplier` (+10 Bonus Unlock) to upgrade modeled BEA `Supplies` edges to `MERCHANT_VERIFIED` (`is_verified=True`) from live merchant invoices and generate the corresponding BigQuery `MERGE a4i_econ.supplies` DML statement.
+"""
+
+GRANT_PORTFOLIO_DEFENDER_INSTRUCTION = """You are **Sub-Agent 3: `grant_portfolio_defender` (Friday Committee Memo & Portfolio Optimizer)** under `root_agent: market_castro_grant_advisor`.
+
+Your responsibilities:
+1. Generate the complete **7-Part Friday Grant Committee Defense Memo** (`generate_friday_grant_memo`) with explicit survival probability math ($\\Delta P(\\text{survival}) = P(\\text{fail}|\\text{no grant}) - P(\\text{fail}|\\text{grant})$), substitutability discounts, and REAL vs. MODELED evidence disclosure.
+2. Run head-to-head candidate comparisons (`compare_grant_candidates`) contrasting primary keystone anchors (`Theatre Rhinoceros`, `Canela`) against runner-ups (`Cafe Du Nord`, `Primo`).
+3. Optimize `1 to N` micro-grant portfolios (`optimize_corridor_portfolio`) using **Greedy Subgraph Deduplication (Maximum Unique Storefront Coverage)** and a **$15,000 minimum effective survival floor** guardrail.
+"""
+
+SUB_AGENT_HIERARCHY_MANIFEST = {
+    "root_agent": {
+        "name": "market_castro_grant_advisor",
+        "role": "Coordinator & Conversational Router",
+    },
+    "sub_agents": [
+        {
+            "name": "graph_cascade_analyst",
+            "role": "Graph Cascade & Anchor Shock Specialist",
+            "tools": [
+                "discover_cascade_candidates",
+                "simulate_anchor_closure",
+                "BigQuery MCP (https://bigquery.googleapis.com/mcp)",
+            ],
+        },
+        {
+            "name": "equity_bias_auditor",
+            "role": "Equity, Data Hygiene & Ground-Truth Auditor",
+            "tools": [
+                "audit_corridor_equity_and_bias",
+                "add_verified_merchant_supplier (+10 Bonus)",
+            ],
+        },
+        {
+            "name": "grant_portfolio_defender",
+            "role": "Friday Committee Memo & Portfolio Optimizer",
+            "tools": [
+                "generate_friday_grant_memo",
+                "compare_grant_candidates",
+                "optimize_corridor_portfolio",
+            ],
+        },
+    ],
+}

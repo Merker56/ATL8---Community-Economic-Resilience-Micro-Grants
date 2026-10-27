@@ -15,7 +15,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from .agent import run_end_to_end_workflow, run_grant_officer_chat
+from .agent import (
+    get_multi_agent_hierarchy,
+    run_end_to_end_workflow,
+    run_grant_officer_chat,
+)
+from .mcp_config import get_mcp_and_bigquery_status
 from .tools import (
     ENGINE,
     add_verified_merchant_supplier,
@@ -56,6 +61,12 @@ def handle_api_get(path: str, query_string: str) -> tuple[int, dict[str, Any]]:
 
     if path == "/api/health":
         return 200, get_system_integration_status()
+
+    if path == "/api/hierarchy":
+        return 200, get_multi_agent_hierarchy()
+
+    if path == "/api/mcp-status":
+        return 200, get_mcp_and_bigquery_status()
 
     if path == "/api/workflow":
         res = run_end_to_end_workflow(

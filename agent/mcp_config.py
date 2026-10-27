@@ -21,6 +21,32 @@ BIGQUERY_MCP_URL = "https://bigquery.googleapis.com/mcp"
 TOOLS_YAML_PATH = Path(__file__).resolve().parent / "tools.yaml"
 
 
+def load_mcp_tools_yaml_manifest() -> dict[str, Any]:
+    """
+    Parse `agent/tools.yaml` to list parameterized BigQuery GQL/SQL tools configured
+    for MCP Toolbox for Databases without requiring external YAML packages when unavailable.
+    """
+    if not TOOLS_YAML_PATH.exists():
+        return {"exists": False, "tools": []}
+    raw = TOOLS_YAML_PATH.read_text(encoding="utf-8")
+    tool_names: list[str] = []
+    in_tools = False
+    for line in raw.splitlines():
+        if line.strip() == "tools:":
+            in_tools = True
+            continue
+        if in_tools and line.startswith("  ") and not line.startswith("    "):
+            name = line.strip().rstrip(":")
+            if name and not name.startswith("#"):
+                tool_names.append(name)
+    return {
+        "exists": True,
+        "path": str(TOOLS_YAML_PATH),
+        "tool_count": len(tool_names),
+        "tools": tool_names,
+    }
+
+
 def get_mcp_and_bigquery_status() -> dict[str, Any]:
     """Return diagnostic readiness status for BigQuery MCP and live BigQuery GQL."""
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT_ID", "")
@@ -53,6 +79,7 @@ def get_mcp_and_bigquery_status() -> dict[str, Any]:
         "bigquery_mcp_endpoint": BIGQUERY_MCP_URL,
         "tools_yaml_path": str(TOOLS_YAML_PATH),
         "tools_yaml_exists": TOOLS_YAML_PATH.exists(),
+        "mcp_tools_manifest": load_mcp_tools_yaml_manifest(),
         "google_cloud_project": project_id or "(not set — using local graph engine)",
         "enable_bigquery_mcp_flag": enable_mcp,
         "use_live_bigquery_flag": use_live_bq,
