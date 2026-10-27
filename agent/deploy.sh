@@ -61,6 +61,22 @@ fi
 
 cd "${REPO_ROOT}"
 
+# Step 1: Ensure Member 1's BigQuery dataset & Property Graph exist in production
+if command -v bq >/dev/null 2>&1; then
+  echo "----------------------------------------------------------------------"
+  echo " Verifying Member 1 BigQuery Dataset (${PROJECT_ID}:${BQ_DATASET}) & Property Graph..."
+  echo "----------------------------------------------------------------------"
+  if ! bq show "${PROJECT_ID}:${BQ_DATASET}.businesses" >/dev/null 2>&1; then
+    echo "Loading Member 1 corridor tables into ${PROJECT_ID}:${BQ_DATASET}..."
+    bash "${REPO_ROOT}/scripts/load.sh" market-castro || true
+  fi
+  if [[ -f "${REPO_ROOT}/sql/01_create_property_graph.sql" ]]; then
+    echo "Provisioning ISO/GQL Property Graph (${BQ_DATASET}.${BQ_GRAPH})..."
+    bq query --project_id="${PROJECT_ID}" --use_legacy_sql=false < "${REPO_ROOT}/sql/01_create_property_graph.sql" || true
+  fi
+fi
+
+# Step 2: Deploy Unified Member 1 + Member 2 + Member 3 Service to Cloud Run
 gcloud run deploy "${SERVICE_NAME}" \
   --source . \
   --project="${PROJECT_ID}" \
@@ -74,7 +90,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory=1Gi \
   --cpu=1 \
   --port=8080 \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=TRUE,BQ_DATASET=${BQ_DATASET},BQ_LOCATION=${BQ_LOCATION},BQ_GRAPH=${BQ_GRAPH}" \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=TRUE,BQ_DATASET=${BQ_DATASET},BQ_LOCATION=${BQ_LOCATION},BQ_GRAPH=${BQ_GRAPH},USE_LIVE_BIGQUERY=true,ENABLE_BIGQUERY_MCP=true" \
   "${VPC_FLAGS[@]}"
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${REGION}" --format='value(status.url)')"
@@ -87,3 +103,9 @@ echo " 3-Sub-Agent Workflow API     : ${SERVICE_URL}/api/workflow"
 echo " Health & MCP/BQ Status       : ${SERVICE_URL}/api/health"
 echo " ADK Agent Info               : ${SERVICE_URL}/api/agent-info"
 echo "======================================================================"
+
+# Step 3: Run automated post-deploy production integration suite against live URL
+if [[ -f "${REPO_ROOT}/scripts/test_production_integration.sh" ]]; then
+  echo ""
+  bash "${REPO_ROOT}/scripts/test_production_integration.sh" "${SERVICE_URL}"
+fi
