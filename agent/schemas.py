@@ -94,3 +94,45 @@ class FridayGrantMemo:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class SubAgentStepTrace:
+    """Execution trace for one specialist sub-agent in the Multi-Agent workflow."""
+
+    step_order: int
+    sub_agent_name: str
+    role_description: str
+    tools_invoked: list[str]
+    gql_queries_executed: list[str]
+    execution_ms: float
+    status: str
+    key_findings_summary: str
+
+
+@dataclass
+class EndToEndWorkflowResult:
+    """
+    Unified End-to-End Multi-Agent Workflow output connecting:
+      - Member 1 (Data & BigQuery Property Graph `a4i_econ.LocalEconomy`)
+      - Member 2 (Google ADK Root Orchestrator + 3 Specialist Sub-Agents + MCP)
+      - Member 3 (Grant Officer Defense Console UI)
+    """
+
+    workflow_id: str
+    corridor: str
+    execution_mode: str
+    total_execution_ms: float
+    sub_agent_traces: list[dict[str, Any]]
+    graph_discovery: dict[str, Any]
+    equity_and_bias_audit: dict[str, Any]
+    portfolio_optimization: dict[str, Any]
+    primary_friday_memo: dict[str, Any]
+    runner_up_comparison: dict[str, Any]
+    anchor_shock_simulation: dict[str, Any]
+    executive_committee_brief: str
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+

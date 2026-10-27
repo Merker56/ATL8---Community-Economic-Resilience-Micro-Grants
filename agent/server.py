@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from .agent import run_grant_officer_chat
+from .agent import run_end_to_end_workflow, run_grant_officer_chat
 from .tools import (
     ENGINE,
     add_verified_merchant_supplier,
@@ -23,7 +23,9 @@ from .tools import (
     compare_grant_candidates,
     discover_cascade_candidates,
     generate_friday_grant_memo,
+    get_system_integration_status,
     optimize_corridor_portfolio,
+    reload_corridor_graph,
     simulate_anchor_closure,
 )
 
@@ -52,6 +54,24 @@ def _int_param(params: dict[str, list[str]], key: str, default: int) -> int:
 def handle_api_get(path: str, query_string: str) -> tuple[int, dict[str, Any]]:
     params = parse_qs(query_string)
 
+    if path == "/api/health":
+        return 200, get_system_integration_status()
+
+    if path == "/api/workflow":
+        res = run_end_to_end_workflow(
+            corridor_name=params.get("corridor", ["Market/Castro"])[0],
+            budget_pool_usd=_float_param(params, "budget_pool", 50000.0),
+            num_grantees=_int_param(params, "num_grantees", 2),
+            min_effective_grant_usd=_float_param(params, "min_floor", 15000.0),
+            primary_candidate_query=params.get("business", ["Theatre Rhinoceros"])[0],
+            runner_up_query=params.get("runner_up", ["Cafe Du Nord"])[0],
+            anchor_block_query=params.get("anchor", ["060750171011001"])[0],
+            p_fail_without_grant=_float_param(params, "p_fail_no_grant", 0.65),
+            p_fail_with_grant=_float_param(params, "p_fail_grant", 0.15),
+            substitutability_discount=_float_param(params, "sub_discount", 0.20),
+        )
+        return 200, res
+
     if path == "/api/overview":
         discovery = discover_cascade_candidates(
             exclude_virtual_mailboxes=True,
@@ -78,6 +98,7 @@ def handle_api_get(path: str, query_string: str) -> tuple[int, dict[str, Any]]:
         )
         return 200, {
             "summary": ENGINE.summary,
+            "system_status": get_system_integration_status(),
             "discovery": discovery,
             "default_memo": default_memo,
             "default_portfolio": default_portfolio,
@@ -146,6 +167,27 @@ def handle_api_get(path: str, query_string: str) -> tuple[int, dict[str, Any]]:
 
 
 def handle_api_post(path: str, body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if path == "/api/reload":
+        custom_path = str(body.get("graph_path", body.get("custom_graph_path", "")))
+        return 200, reload_corridor_graph(graph_path=custom_path)
+
+    if path == "/api/workflow":
+        res = run_end_to_end_workflow(
+            corridor_name=str(body.get("corridor_name", "Market/Castro")),
+            budget_pool_usd=float(body.get("budget_pool_usd", 50000.0)),
+            num_grantees=int(body.get("num_grantees", 2)),
+            min_effective_grant_usd=float(body.get("min_effective_grant_usd", 15000.0)),
+            primary_candidate_query=str(
+                body.get("primary_candidate_query", "Theatre Rhinoceros")
+            ),
+            runner_up_query=str(body.get("runner_up_query", "Cafe Du Nord")),
+            anchor_block_query=str(body.get("anchor_block_query", "200894")),
+            p_fail_without_grant=float(body.get("p_fail_without_grant", 0.65)),
+            p_fail_with_grant=float(body.get("p_fail_with_grant", 0.15)),
+            substitutability_discount=float(body.get("substitutability_discount", 0.20)),
+        )
+        return 200, res
+
     if path == "/api/merchant-intake":
         res = add_verified_merchant_supplier(
             buyer_query=str(body.get("buyer_query", "The Castro")),
@@ -169,14 +211,24 @@ class GrantConsoleHTTPHandler(BaseHTTPRequestHandler):
         # Keep console output clean
         pass
 
+    def _send_cors_headers(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
     def _send_json(self, status: int, payload: dict[str, Any]) -> None:
         raw = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._send_cors_headers()
         self.end_headers()
         self.wfile.write(raw)
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._send_cors_headers()
+        self.end_headers()
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -195,6 +247,7 @@ class GrantConsoleHTTPHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(content)))
+            self._send_cors_headers()
             self.end_headers()
             self.wfile.write(content)
         else:
@@ -210,6 +263,50 @@ class GrantConsoleHTTPHandler(BaseHTTPRequestHandler):
             body = {}
         status, payload = handle_api_post(parsed.path, body)
         self._send_json(status, payload)
+
+
+# Optional FastAPI app wrapper (when `fastapi` is installed, supports `uvicorn agent.server:app`)
+try:
+    from fastapi import FastAPI, Request
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import HTMLResponse, JSONResponse
+
+    app = FastAPI(
+        title="A4I 2026 Market/Castro Grant Officer Defense Console API",
+        version="2.0.0",
+        description="Member 2 Backend REST + Multi-Agent + MCP API for Challenge 3",
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/")
+    async def serve_index() -> HTMLResponse:
+        index_file = STATIC_DIR / "index.html"
+        if index_file.exists():
+            return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+        return HTMLResponse(content="<h1>Static UI index.html not found</h1>", status_code=404)
+
+    @app.get("/api/{endpoint:path}")
+    async def fastapi_get_router(endpoint: str, request: Request) -> JSONResponse:
+        status, payload = handle_api_get(f"/api/{endpoint}", request.url.query)
+        return JSONResponse(content=payload, status_code=status)
+
+    @app.post("/api/{endpoint:path}")
+    async def fastapi_post_router(endpoint: str, request: Request) -> JSONResponse:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        status, payload = handle_api_post(f"/api/{endpoint}", body)
+        return JSONResponse(content=payload, status_code=status)
+
+except ImportError:
+    app = None
 
 
 def run_server(host: str = "127.0.0.1", port: int = 8080) -> None:

@@ -54,3 +54,54 @@ tools:
         downstream.address AS downstream_address,
         ARRAY_LENGTH(EDGES(p)) AS hop_distance,
         TO_JSON(p) AS path_json;
+
+  gql_compounded_cascade_score:
+    kind: bigquery-sql
+    source: a4i_bigquery
+    description: >
+      Compute 2-hop compounded dependency (e1.intensity * e2.intensity) and
+      bottleneck intensity (LEAST(e1.intensity, e2.intensity)) for a supplier.
+    parameters:
+      - name: target_business_id
+        type: string
+        description: The SF business_id (e.g., 1328524-03-231 for Theatre Rhinoceros)
+    statement: |
+      GRAPH a4i_econ.LocalEconomy
+      MATCH (s:Business {business_id: @target_business_id})-[e1:Supplies]->(b1:Business)-[e2:Supplies]->(b2:Business)
+      WHERE b2.business_id <> s.business_id
+      RETURN
+        s.name AS supplier_name,
+        b1.name AS hop1_buyer,
+        b2.name AS hop2_buyer,
+        ROUND(e1.intensity, 4) AS hop1_intensity,
+        ROUND(e2.intensity, 4) AS hop2_intensity,
+        ROUND(e1.intensity * e2.intensity, 5) AS compounded_intensity,
+        ROUND(LEAST(e1.intensity, e2.intensity), 4) AS bottleneck_intensity
+      ORDER BY compounded_intensity DESC
+      LIMIT 25;
+
+  gql_track3_anchor_closure:
+    kind: bigquery-sql
+    source: a4i_bigquery
+    description: >
+      Track 3 two-direction anchor closure traversal: forward along DrawsFootfall
+      from an EmployerBlock and backward along Supplies to upstream corridor suppliers.
+    parameters:
+      - name: target_block_id
+        type: string
+        description: The 15-character Census block GEOID (e.g., 060750171011001)
+    statement: |
+      GRAPH a4i_econ.LocalEconomy
+      MATCH (anchor:Employer {block_id: @target_block_id})<-[df:DrawsFootfall]-(b1:Business)<-[s:Supplies]-(upstream:Business)
+      WHERE upstream.business_id <> b1.business_id
+      RETURN
+        anchor.block_id AS anchor_block_id,
+        b1.name AS direct_storefront_hurt,
+        upstream.business_id AS upstream_supplier_id,
+        upstream.name AS upstream_supplier_name,
+        upstream.address AS upstream_supplier_address,
+        ROUND(df.gravity_pull, 4) AS footfall_pull,
+        ROUND(s.intensity, 4) AS supply_intensity,
+        ROUND(df.gravity_pull * s.intensity, 5) AS joint_shock_score
+      ORDER BY joint_shock_score DESC
+      LIMIT 25;

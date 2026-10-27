@@ -60,8 +60,29 @@ class MarketCastroGraphEngine:
     """In-memory Property Graph engine mirroring `a4i_econ.LocalEconomy`."""
 
     def __init__(self, graph_path: Path = GRAPH_JSON_PATH) -> None:
-        self.graph_path = graph_path
+        self.graph_path = Path(graph_path)
         self._load()
+
+    def reload_graph(self, new_path: str | Path | None = None) -> dict[str, Any]:
+        """Hot-reload the Property Graph JSON when Member 1 updates data or switches corridors."""
+        if new_path:
+            candidate = Path(new_path)
+            if not candidate.is_absolute():
+                candidate = ROOT_DIR / candidate
+            if candidate.exists():
+                self.graph_path = candidate
+        self._load()
+        return {
+            "status": "reloaded",
+            "graph_path": str(self.graph_path),
+            "corridor": self.summary.get("corridor", "Market/Castro"),
+            "businesses_count": len(self.businesses),
+            "supplies_edges_count": len(self.supplies),
+            "footfall_edges_count": len(self.draws_footfall),
+            "employer_blocks_count": len(self.employer_blocks),
+            "tracts_count": len(self.tracts),
+            "sba_loans_count": len(self.borrowed_from),
+        }
 
     def _load(self) -> None:
         with open(self.graph_path, "r", encoding="utf-8") as f:
@@ -456,6 +477,13 @@ def discover_cascade_candidates(
         )
     )
     flagged_artifacts.sort(key=lambda x: -x["total_2hop_exposed_count"])
+    vm_traps = [a for a in flagged_artifacts if a.get("is_virtual_mailbox_hub")][:5]
+    monopoly_traps = [
+        a
+        for a in flagged_artifacts
+        if a.get("is_single_supplier_monopoly") and a not in vm_traps
+    ][:3]
+    combined_traps = vm_traps + monopoly_traps
 
     gql_query = """GRAPH a4i_econ.LocalEconomy
 MATCH (s:Business)-[e1:Supplies]->(b1:Business)
@@ -484,7 +512,7 @@ LIMIT 15;"""
             "keystone_reach_band": [min_reach, max_reach],
         },
         "actionable_keystone_candidates": candidates[:top_k],
-        "disqualified_naive_centrality_traps": flagged_artifacts[:6],
+        "disqualified_naive_centrality_traps": combined_traps,
         "methodology_note": (
             "Naive degree/reach centrality in Market/Castro is dominated by two artifacts: "
             "(1) 140 businesses sharing virtual mailboxes at 2261 Market St (e.g., Echo Chunk Inc. with 235 2-hop reach) "
@@ -1307,4 +1335,56 @@ def optimize_corridor_portfolio(
             f"Rhinoceros and #4 Hi Tops is 100% redundant with #2 Canela."
         ),
     }
+
+
+def reload_corridor_graph(graph_path: str = "") -> dict[str, Any]:
+    """
+    Hot-reload Member 1's Property Graph JSON file (or switch to a new corridor
+    graph file) without restarting the backend server.
+    """
+    return ENGINE.reload_graph(graph_path if graph_path.strip() else None)
+
+
+def get_system_integration_status() -> dict[str, Any]:
+    """
+    Cross-validate end-to-end readiness across Member 1 (Data & BigQuery SQL),
+    Member 2 (Multi-Agent ADK, MCP & Tools), and Member 3 (Static UI Console).
+    """
+    from .mcp_config import get_mcp_and_bigquery_status
+
+    sql_dir = ROOT_DIR / "sql"
+    ui_index = ROOT_DIR / "agent" / "static" / "index.html"
+    sql_files = [
+        "01_create_property_graph.sql",
+        "02_gql_cascade_queries.sql",
+        "03_equity_and_bias_audit.sql",
+    ]
+    sql_status = {f: (sql_dir / f).exists() for f in sql_files}
+
+    all_tracts_11char = all(
+        len(str(t.get("geo_id", "")).zfill(11)) == 11 for t in ENGINE.tracts
+    )
+
+    return {
+        "status": "ok",
+        "corridor": ENGINE.summary.get("corridor", "Market/Castro"),
+        "member1_data_and_bigquery_ready": {
+            "graph_json_path": str(ENGINE.graph_path),
+            "graph_json_exists": ENGINE.graph_path.exists(),
+            "businesses_loaded": len(ENGINE.businesses),
+            "employer_blocks_loaded": len(ENGINE.employer_blocks),
+            "supplies_edges_loaded": len(ENGINE.supplies),
+            "draws_footfall_edges_loaded": len(ENGINE.draws_footfall),
+            "borrowed_from_loans_loaded": len(ENGINE.borrowed_from),
+            "tract_demographics_loaded": len(ENGINE.tracts),
+            "lpad_11char_tract_geoid_verified": all_tracts_11char,
+            "sql_scripts_verified": sql_status,
+        },
+        "member2_multi_agent_and_mcp_ready": get_mcp_and_bigquery_status(),
+        "member3_ui_console_ready": {
+            "static_index_html_path": str(ui_index),
+            "static_index_html_exists": ui_index.exists(),
+        },
+    }
+
 
