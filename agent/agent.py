@@ -15,8 +15,14 @@ import time
 import uuid
 from typing import Any
 
-from .mcp_config import build_bigquery_mcp_toolset
-from .prompts import ROOT_AGENT_INSTRUCTION
+from .mcp_config import build_bigquery_mcp_toolset, get_mcp_and_bigquery_status
+from .prompts import (
+    EQUITY_BIAS_AUDITOR_INSTRUCTION,
+    GRANT_PORTFOLIO_DEFENDER_INSTRUCTION,
+    GRAPH_CASCADE_ANALYST_INSTRUCTION,
+    ROOT_AGENT_INSTRUCTION,
+    SUB_AGENT_HIERARCHY_MANIFEST,
+)
 from .schemas import EndToEndWorkflowResult, SubAgentStepTrace
 from .tools import (
     add_verified_merchant_supplier,
@@ -65,11 +71,7 @@ try:
             "ANY SHORTEST + TO_JSON(p) path extraction, Keystone Band (5-28 reach) discovery, "
             "and Track 3 two-direction anchor closure simulations."
         ),
-        instruction=(
-            "You are the Graph Cascade & Anchor Shock Specialist. Execute GQL traversals "
-            "on a4i_econ.LocalEconomy, extract TO_JSON(p) paths, and simulate 2-direction "
-            "DrawsFootfall and Supplies shocks."
-        ),
+        instruction=GRAPH_CASCADE_ANALYST_INSTRUCTION,
         tools=graph_cascade_tools,
     )
 
@@ -82,10 +84,7 @@ try:
             "hub traps (2261 Market St / 584 Castro St), duplicate DBAs, LPAD 11-char ACS Census "
             "Tract equity metrics, SBA 7(a) charge-offs, and merchant-verified supplier intake."
         ),
-        instruction=(
-            "You are the Equity & Data Hygiene Auditor. Flag virtual mailbox hubs, single-supplier "
-            "NAICS monopoly artifacts, and duplicate tax filings, and ingest verified merchant supplier invoices."
-        ),
+        instruction=EQUITY_BIAS_AUDITOR_INSTRUCTION,
         tools=[
             audit_corridor_equity_and_bias,
             add_verified_merchant_supplier,
@@ -101,11 +100,7 @@ try:
             "head-to-head runner-up comparisons, and Subgraph-Deduplicated Multi-Business Portfolio "
             "Optimization with a $15,000 minimum effective survival grant guardrail."
         ),
-        instruction=(
-            "You are the Friday Grant Committee Defense Specialist. Construct rigorous 7-part "
-            "grant memos, compare candidates head-to-head, and optimize 1-to-N business grant portfolios "
-            "without subgraph overlap or survival runway dilution."
-        ),
+        instruction=GRANT_PORTFOLIO_DEFENDER_INSTRUCTION,
         tools=[
             generate_friday_grant_memo,
             compare_grant_candidates,
@@ -135,6 +130,16 @@ except ImportError:
     equity_bias_auditor_agent = None
     grant_portfolio_defense_agent = None
     root_agent = None
+
+
+def get_multi_agent_hierarchy() -> dict[str, Any]:
+    """Return the structured Multi-Agent Hierarchy manifest and live ADK initialization state."""
+    return {
+        **SUB_AGENT_HIERARCHY_MANIFEST,
+        "adk_agents_initialized": root_agent is not None,
+        "adk_model": os.environ.get("ADK_MODEL", "gemini-2.5-pro"),
+        "mcp_status": get_mcp_and_bigquery_status(),
+    }
 
 
 def run_end_to_end_workflow(
@@ -340,6 +345,22 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             "data": res,
         }
 
+    # 0b. Judge Trap / Intellectual Honesty Refusal (Unknowable Private Rent, Lease, or Exact Employee Headcount)
+    if any(k in low for k in ("exact monthly rent", "lease expiration", "exact w-2", "individual employee headcount", "private invoice")):
+        audit = audit_corridor_equity_and_bias()
+        return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
+            "tool_called": "audit_corridor_equity_and_bias",
+            "reply": (
+                "### Intellectual Honesty Refusal — Unknowable Private Storefront Data\n"
+                "- **What We Refuse to Fabricate:** Public government datasets do **NOT** contain individual business monthly rent, commercial lease expiration dates, private vendor invoices (unless uploaded via our `+10 Bonus Merchant Supplier Intake`), or per-storefront W-2 headcount.\n"
+                "- **Why:** Census LODES (`wac`) reports jobs only at the **aggregate Census Block (`block_id`)** level, and SF Open Data (`g8m3-pdis`) reports business locations and NAICS codes without private balance-sheet data.\n"
+                "- **What We Use Instead:** Measured Census Block LODES employment (`employer_blocks`), 11-character ACS Census Tract vulnerability (`tract_demographics`), historical SBA 7(a) loan approvals/charge-offs (`borrowed_from`), and BEA Make-Use industry purchase coefficients (`Supplies`)."
+            ),
+            "data": audit,
+        }
+
     # 1. Merchant supplier intake intent (+10 Bonus)
     if any(k in low for k in ("verify", "intake", "invoice", "add supplier", "supplies to", "buys from")):
         res = add_verified_merchant_supplier(
@@ -387,6 +408,33 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
                 f"**Anchor Block:** `{blk['block_geoid']}` (`{blk['total_jobs']}` LODES jobs, Tract `{blk['tract_geoid']}`)\n\n"
                 f"**1. Direct Footfall-Dependent Storefronts Hurt (`<-[df:DrawsFootfall]-`):**\n{sf_lines}\n\n"
                 f"**2. Upstream Corridor Suppliers Hurt (`<-[s:Supplies]-`):**\n{up_lines}"
+            ),
+            "data": res,
+        }
+
+    # 2b. Keystone Band Discovery intent
+    if any(k in low for k in ("discover", "keystone band", "candidates", "5 to 28", "rank all", "top candidates")):
+        res = discover_cascade_candidates(
+            exclude_virtual_mailboxes=True,
+            exclude_monopoly_artifacts=True,
+            min_reach=3,
+            max_reach=35,
+            top_k=10,
+        )
+        top_lines = "\n".join(
+            f"  - **{c['name']}** (`{c['business_id']}`, {c['address']}, NAICS `{c['naics4']}`): "
+            f"`{c['direct_1hop_count']}` direct + `{c['indirect_2hop_count']}` indirect (`{c['total_2hop_exposed_count']}` total 2-hop, "
+            f"1-hop intensity `{c['total_1hop_intensity']}`, keystone score `{c['actionable_keystone_score']}`)"
+            for c in res["actionable_keystone_candidates"][:5]
+        )
+        return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "graph_cascade_analyst",
+            "tool_called": "discover_cascade_candidates",
+            "reply": (
+                f"### Actionable Keystone Band Discovery (Routed to `graph_cascade_analyst`)\n"
+                f"Filtered out `{len(res['disqualified_naive_centrality_traps'])}` virtual-mailbox / single-supplier monopoly traps:\n"
+                f"{top_lines}"
             ),
             "data": res,
         }

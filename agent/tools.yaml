@@ -105,3 +105,23 @@ tools:
         ROUND(df.gravity_pull * s.intensity, 5) AS joint_shock_score
       ORDER BY joint_shock_score DESC
       LIMIT 25;
+
+  sql_equity_and_mailbox_audit:
+    kind: bigquery-sql
+    source: a4i_bigquery
+    description: >
+      Audit Market/Castro Census Tract vulnerability with 11-character LPAD(geo_id, 11, '0')
+      formatting and flag virtual mailbox hub traps (2261 Market St, 584 Castro St).
+    statement: |
+      SELECT
+        LPAD(CAST(geo_id AS STRING), 11, '0') AS tract_geoid,
+        total_pop,
+        ROUND(median_income, 0) AS median_income,
+        ROUND(SAFE_DIVIDE(income_below_poverty_level, poverty_universe), 4) AS poverty_rate,
+        ROUND(SAFE_DIVIDE(no_cars, households), 4) AS no_vehicle_rate
+      FROM `bigquery-public-data.census_bureau_acs.censustract_2020_5yr`
+      WHERE LPAD(CAST(geo_id AS STRING), 11, '0') IN (
+        '06075016600', '06075016700', '06075016801', '06075016900',
+        '06075017000', '06075017101', '06075020201', '06075020300'
+      )
+      ORDER BY poverty_rate DESC;

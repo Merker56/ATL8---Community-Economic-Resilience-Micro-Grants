@@ -20,6 +20,7 @@ if str(ROOT_DIR) not in sys.path:
 from agent.agent import (
     AGENT_TOOLS,
     equity_bias_auditor_agent,
+    get_multi_agent_hierarchy,
     grant_portfolio_defense_agent,
     graph_cascade_agent,
     root_agent,
@@ -51,6 +52,9 @@ class TestMember2Deliverables(unittest.TestCase):
     def test_01_adk_multi_agent_hierarchy(self) -> None:
         """Verify Google ADK root_agent + 3 specialist sub-agents and 9 tools."""
         self.assertEqual(len(AGENT_TOOLS), 9)
+        hierarchy = get_multi_agent_hierarchy()
+        self.assertEqual(hierarchy["root_agent"]["name"], "market_castro_grant_advisor")
+        self.assertEqual(len(hierarchy["sub_agents"]), 3)
         if root_agent is not None:
             self.assertEqual(root_agent.name, "market_castro_grant_advisor")
             self.assertEqual(len(root_agent.sub_agents), 3)
@@ -71,12 +75,14 @@ class TestMember2Deliverables(unittest.TestCase):
         """Verify tools.yaml parameterized GQL queries and MCP/BigQuery bridge status."""
         mcp_status = get_mcp_and_bigquery_status()
         self.assertTrue(mcp_status["tools_yaml_exists"])
+        self.assertEqual(mcp_status["mcp_tools_manifest"]["tool_count"], 5)
         tools_yaml = (ROOT_DIR / "agent" / "tools.yaml").read_text(encoding="utf-8")
         for tool_name in (
             "gql_keystone_band",
             "gql_cascade_paths_to_json",
             "gql_compounded_cascade_score",
             "gql_track3_anchor_closure",
+            "sql_equity_and_mailbox_audit",
         ):
             self.assertIn(tool_name, tools_yaml)
 
@@ -232,6 +238,8 @@ class TestMember2Deliverables(unittest.TestCase):
         """Verify all GET and POST REST API endpoints for Member 3's frontend."""
         get_endpoints = [
             "/api/health",
+            "/api/hierarchy",
+            "/api/mcp-status",
             "/api/workflow?budget_pool=50000&num_grantees=2",
             "/api/overview",
             "/api/portfolio?budget_pool=50000&num_grantees=2",
@@ -258,12 +266,16 @@ class TestMember2Deliverables(unittest.TestCase):
                 },
             ),
             ("/api/chat", {"message": "Run the end-to-end multi-agent workflow"}),
+            ("/api/chat", {"message": "What is the exact monthly rent of Theatre Rhinoceros?"}),
             ("/api/reload", {}),
         ]
         for path, body in post_tests:
             status, payload = handle_api_post(path, body)
             self.assertEqual(status, 200, f"POST {path} failed with {status}")
             self.assertIsInstance(payload, dict)
+            if path == "/api/chat":
+                self.assertIn("sub_agent_routed", payload)
+                self.assertEqual(payload["root_orchestrator"], "market_castro_grant_advisor")
 
         # Verify FastAPI app object is initialized when fastapi is installed
         self.assertIsNotNone(app)

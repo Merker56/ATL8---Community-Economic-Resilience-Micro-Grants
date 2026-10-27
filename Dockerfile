@@ -12,9 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY agent/requirements.txt /app/agent/requirements.txt
 RUN pip install --no-cache-dir -r /app/agent/requirements.txt
 
-# Copy BEA direct requirements data, SQL queries, and agent application
+# Copy BEA direct requirements data, SQL queries, scripts, tests, and agent application
 COPY data/ /app/data/
 COPY sql/ /app/sql/
+COPY scripts/ /app/scripts/
+COPY tests/ /app/tests/
 COPY agent/ /app/agent/
 
 # Environment defaults from Qwiklabs Cloud Run config
@@ -27,6 +29,9 @@ ENV PORT=8080 \
     BQ_DATASET="a4i_econ" \
     BQ_LOCATION="US" \
     BQ_GRAPH="LocalEconomy"
+
+# Build-time E2E sanity gate across Member 1 + Member 2 + Member 3 contracts
+RUN python3 -m unittest tests/test_member2_e2e.py
 
 EXPOSE 8080
 

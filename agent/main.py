@@ -20,15 +20,20 @@ from pydantic import BaseModel
 
 AGENT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = AGENT_DIR.parent
-for _p in (str(ROOT_DIR), str(AGENT_DIR)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+# Ensure ROOT_DIR precedes AGENT_DIR (and cwd when launched from inside `agent/`)
+# so `import agent.server` resolves to the `agent/` package rather than `agent/agent.py`.
+sys.path = [p for p in sys.path if Path(p or ".").resolve() != AGENT_DIR]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 try:
     from agent.server import handle_api_get as mc_handle_get, handle_api_post as mc_handle_post
 except Exception:
     mc_handle_get = None
     mc_handle_post = None
+
+if str(AGENT_DIR) not in sys.path:
+    sys.path.append(str(AGENT_DIR))
 
 from grant_officer_agent.agent import (
     SYSTEM_INSTRUCTION,
@@ -116,6 +121,8 @@ async def serve_market_castro_ui():
 
 @app.get("/api/overview")
 @app.get("/api/workflow")
+@app.get("/api/hierarchy")
+@app.get("/api/mcp-status")
 @app.get("/api/portfolio")
 @app.get("/api/candidates")
 @app.get("/api/memo")
