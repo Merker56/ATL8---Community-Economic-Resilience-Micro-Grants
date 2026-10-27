@@ -1,0 +1,56 @@
+# MCP Toolbox for Databases configuration for A4I 2026 Challenge 3
+# Exposes parameterized BigQuery Property Graph GQL queries as typed MCP tools.
+sources:
+  a4i_bigquery:
+    kind: bigquery
+    project: ${GOOGLE_CLOUD_PROJECT}
+    location: US
+
+tools:
+  gql_keystone_band:
+    kind: bigquery-sql
+    source: a4i_bigquery
+    description: >
+      Discover businesses in the Market/Castro corridor whose 1-to-2 hop supply
+      cascade falls within the actionable keystone band (3 to 35 downstream businesses).
+    statement: |
+      GRAPH a4i_econ.LocalEconomy
+      MATCH (s:Business)-[e1:Supplies]->(b1:Business)
+      OPTIONAL MATCH (b1)-[e2:Supplies]->(b2:Business)
+      WHERE b2.business_id <> s.business_id
+      RETURN
+        s.business_id AS business_id,
+        s.name AS supplier_name,
+        s.address AS address,
+        s.naics4 AS naics4,
+        COUNT(DISTINCT b1.business_id) AS direct_1hop_buyers,
+        COUNT(DISTINCT b2.business_id) AS indirect_2hop_buyers,
+        ROUND(SUM(DISTINCT e1.intensity), 4) AS total_1hop_intensity
+      GROUP BY s.business_id, s.name, s.address, s.naics4
+      NEXT
+      FILTER WHERE direct_1hop_buyers + indirect_2hop_buyers BETWEEN 3 AND 35
+      ORDER BY total_1hop_intensity DESC
+      LIMIT 15;
+
+  gql_cascade_paths_to_json:
+    kind: bigquery-sql
+    source: a4i_bigquery
+    description: >
+      Return 1-to-2 hop shortest supply paths and serialized TO_JSON(p) graph objects
+      for a specific business_id in Market/Castro.
+    parameters:
+      - name: target_business_id
+        type: string
+        description: The SF business_id (e.g., 1328524-03-231 for Theatre Rhinoceros)
+    statement: |
+      GRAPH a4i_econ.LocalEconomy
+      MATCH p = ANY SHORTEST (s:Business {business_id: @target_business_id})
+                -[e:Supplies]->{1,2}(downstream:Business)
+      WHERE downstream.business_id <> s.business_id
+      RETURN
+        s.name AS focal_business,
+        downstream.business_id AS downstream_id,
+        downstream.name AS downstream_name,
+        downstream.address AS downstream_address,
+        ARRAY_LENGTH(EDGES(p)) AS hop_distance,
+        TO_JSON(p) AS path_json;

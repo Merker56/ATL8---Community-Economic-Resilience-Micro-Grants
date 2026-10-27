@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A4I 2026 | Market/Castro Micro-Grant Committee Defense Console</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a30;
+      --panel-alt: #18223f;
+      --border: #26355e;
+      --text: #eef2ff;
+      --muted: #9fb0d9;
+      --accent: #38bdf8;
+      --accent-2: #f59e0b;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --violet: #a78bfa;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top right, #172554 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.48;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 16, 32, 0.92);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: 14px 24px;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge-pill {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 5px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-val {
+      font-size: 17px;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--accent);
+      font-family: var(--mono);
+    }
+    .container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 18px 24px 48px;
+    }
+    .controls-bar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    .ctrl-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .ctrl-group select,
+    .ctrl-group input[type="text"],
+    .ctrl-group input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    .ctrl-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
+      color: #fff;
+      border-color: #38bdf8;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 1100px) {
+      .split-grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .part-grid {
+      display: grid;
+      gap: 11px;
+    }
+    .memo-part {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 13px;
+    }
+    .memo-part.warn { border-left-color: var(--accent-2); }
+    .memo-part.good { border-left-color: var(--emerald); }
+    .memo-part.purple { border-left-color: var(--violet); }
+    .part-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .memo-part.warn .part-title { color: var(--accent-2); }
+    .memo-part.good .part-title { color: var(--emerald); }
+    .memo-part.purple .part-title { color: var(--violet); }
+    .part-body {
+      font-size: 13.2px;
+      color: var(--text);
+    }
+    .graph-canvas-wrap {
+      background: #070b17;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      height: 430px;
+    }
+    svg#cascadeSvg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .graph-legend {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      background: rgba(18, 26, 48, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 9px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+    }
+    tr:hover td {
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .code-box {
+      background: #070b16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 13px;
+      font-family: var(--mono);
+      font-size: 11.8px;
+      color: #bae6fd;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 240px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+    .tag-hop1 { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .tag-hop2 { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .tag-trap { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .tag-verified { background: rgba(245, 158, 11, 0.22); color: #fbbf24; }
+    .btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chat-log {
+      background: #070b16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      height: 270px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .chat-msg { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #1e293b; }
+    .chat-msg b { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <span class="badge-pill">A4I 2026 · Challenge 03</span>
+        <div>
+          <h1>Market / Castro Economic Resilience & Micro-Grant Defense Console</h1>
+          <p>BigQuery Property Graph (GQL) · `a4i_econ.LocalEconomy` · San Francisco Commercial Corridor</p>
+        </div>
+      </div>
+      <div>
+        <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Meeting Preset ($25k + $25k Split)</button>
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Filtered Storefronts</div>
+        <div class="kpi-val" id="kpiStorefronts">327 <span style="font-size:11px;color:var(--muted)">/ 1,566 raw</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">BEA Supplies Edges</div>
+        <div class="kpi-val" id="kpiSupplies">1,199</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">LODES Footfall Edges</div>
+        <div class="kpi-val" id="kpiFootfall">677 <span style="font-size:11px;color:var(--muted)">(10 blocks)</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SBA 7(a) Ground Truth</div>
+        <div class="kpi-val" id="kpiSba">9 Loans <span style="font-size:11px;color:var(--rose)">(2 ChgOff)</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Expected Jobs Saved (ΔP)</div>
+        <div class="kpi-val" id="kpiExpectedJobs" style="color:var(--emerald)">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Grant Cost / Expected Job</div>
+        <div class="kpi-val" id="kpiCostPerJob" style="color:var(--accent-2)">--</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Interactive Parameter Controls -->
+    <div class="controls-bar">
+      <div class="ctrl-group">
+        <label><span>Primary Focal Business</span><span id="focalIdBadge" style="font-family:var(--mono)"></span></label>
+        <select id="selPrimary" onchange="refreshMemo()">
+          <option value="Theatre Rhinoceros">Theatre Rhinoceros (4229 18th St · NAICS 7111)</option>
+          <option value="Cafe Du Nord">Cafe Du Nord (2174 Market St E · NAICS 7113)</option>
+          <option value="Canela">Canela Bistro & Wine Bar (2272 Market St · NAICS 7225)</option>
+          <option value="Leadbetters Bake Shop">Leadbetters Bake Shop (554 Castro St · NAICS 7225)</option>
+          <option value="Castro Tarts Cafe And Bakery">Castro Tarts Cafe & Bakery (564 Castro St · SBA Charge-Off)</option>
+          <option value="Primo">[Artifact] Primo (4201 18th St · Sole NAICS 3121 Monopoly)</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label><span>Runner-Up Comparator</span></label>
+        <select id="selRunnerUp" onchange="refreshMemo()">
+          <option value="Cafe Du Nord">Cafe Du Nord (2174 Market St E · 28 2-Hop Reach)</option>
+          <option value="Canela">Canela (2272 Market St · 9 Direct Buyers)</option>
+          <option value="Leadbetters Bake Shop">Leadbetters Bake Shop (554 Castro St · 500-Block Anchor)</option>
+          <option value="Theatre Rhinoceros">Theatre Rhinoceros (4229 18th St · Cultural Keystone)</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label><span>Micro-Grant Allocation</span><span id="lblGrantAmt">$25,000 / $50,000 Pool</span></label>
+        <input type="range" id="rngGrant" min="10000" max="50000" step="2500" value="25000" oninput="refreshMemo()" />
+      </div>
+      <div class="ctrl-group">
+        <label><span>P(fail | No Grant)</span><span id="lblPFailNo">65%</span></label>
+        <input type="range" id="rngPFailNo" min="0.20" max="0.95" step="0.05" value="0.65" oninput="refreshMemo()" />
+      </div>
+      <div class="ctrl-group">
+        <label><span>P(fail | With Grant)</span><span id="lblPFailYes">15%</span></label>
+        <input type="range" id="rngPFailYes" min="0.05" max="0.50" step="0.05" value="0.15" oninput="refreshMemo()" />
+      </div>
+      <div class="ctrl-group">
+        <label><span>Substitutability Discount</span><span id="lblSubDisc">20%</span></label>
+        <input type="range" id="rngSubDisc" min="0.00" max="0.70" step="0.05" value="0.20" oninput="refreshMemo()" />
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tabMemo', this)">1. 7-Part Friday Defense Memo & Cascade Graph</button>
+      <button class="tab-btn" onclick="switchTab('tabHygiene', this)">2. Why Not Naive Centrality? (Bias, Virtual Mailboxes & Equity Audit)</button>
+      <button class="tab-btn" onclick="switchTab('tabAnchor', this)">3. Track 3: Two-Direction Anchor Closure Simulator</button>
+      <button class="tab-btn" onclick="switchTab('tabBonus', this)">4. +10 Bonus: Live Merchant Supplier Intake & ADK Agent Q&A</button>
+    </div>
+
+    <!-- TAB 1: 7-PART MEMO & CASCADE VISUALIZER -->
+    <div id="tabMemo" class="tab-pane active">
+      <div class="split-grid">
+        <!-- Left Column: The 7-Part Friday Committee Defense Memo -->
+        <div class="card">
+          <h2>
+            <span>Friday Grant Committee Defense Memo (All 7 Rubric Sections)</span>
+            <span class="tag tag-hop1" id="memoHeaderBadge">Keystone Band: 12 Exposed</span>
+          </h2>
+          <div class="part-grid">
+            <div class="memo-part good">
+              <div class="part-title">Part 1 · Which Business (By Name & Address) and How Much</div>
+              <div class="part-body" id="part1Body">Loading...</div>
+            </div>
+            <div class="memo-part">
+              <div class="part-title">Part 2 · What It Protects (Concrete 1-to-2 Hop Cascade & Jobs)</div>
+              <div class="part-body" id="part2Body">Loading...</div>
+            </div>
+            <div class="memo-part purple">
+              <div class="part-title">Part 3 · Graph Traversal Shown (`ANY SHORTEST` + `TO_JSON(p)`)</div>
+              <div class="part-body" id="part3Body">Loading...</div>
+            </div>
+            <div class="memo-part warn">
+              <div class="part-title">Part 4 · Why This One — And NOT the Runner-Up or Raw Centrality Hub</div>
+              <div class="part-body" id="part4Body">Loading...</div>
+            </div>
+            <div class="memo-part good">
+              <div class="part-title">Part 5 · Explicit Assumptions (Survival Probability Shift ΔP, Not Certainty)</div>
+              <div class="part-body" id="part5Body">Loading...</div>
+            </div>
+            <div class="memo-part warn">
+              <div class="part-title">Part 6 · Honest Line: Which Evidence Is REAL vs. MODELED</div>
+              <div class="part-body" id="part6Body">Loading...</div>
+            </div>
+            <div class="memo-part">
+              <div class="part-title">Part 7 · Who Lives Around It (ACS Census Tract `LPAD(geo_id, 11, '0')`)</div>
+              <div class="part-body" id="part7Body">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive SVG Graph + Cascade Table + GQL / TO_JSON(p) Inspector -->
+        <div>
+          <div class="card">
+            <h2>
+              <span>1-to-2 Hop Supply Cascade Topology (`TO_JSON(p)` Path Renderer)</span>
+              <button class="btn-secondary" onclick="toggleJsonModal()">Inspect `TO_JSON(p)` & GQL</button>
+            </h2>
+            <div class="graph-canvas-wrap">
+              <svg id="cascadeSvg" viewBox="0 0 680 420"></svg>
+              <div class="graph-legend">
+                <span><i class="dot" style="background:#f59e0b"></i>Focal Grant Recipient</span>
+                <span><i class="dot" style="background:#10b981"></i>Hop 1 Direct Buyer</span>
+                <span><i class="dot" style="background:#38bdf8"></i>Hop 2 Indirect Buyer</span>
+                <span><i class="dot" style="background:#f43f5e"></i>Virtual Mailbox / Flagged</span>
+              </div>
+            </div>
+            <div id="gqlInspectorWrap" style="display:none; margin-top:12px;">
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:4px;">BigQuery GQL Query Executed (`sql/02_gql_cascade_queries.sql`):</div>
+              <div class="code-box" id="gqlQueryBox"></div>
+              <div style="font-size:11.5px; color:var(--muted); margin:8px 0 4px;">Sample BigQuery `TO_JSON(p)` Path Object:</div>
+              <div class="code-box" id="toJsonBox"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><span>Downstream Businesses Protected (Hop 1 & Hop 2 Cascade Paths)</span></h2>
+            <div style="max-height: 250px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hop</th>
+                    <th>Downstream Business</th>
+                    <th>Address</th>
+                    <th>Via (Hop 1)</th>
+                    <th>Compounded Intensity</th>
+                    <th>Dist</th>
+                  </tr>
+                </thead>
+                <tbody id="cascadeTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <span>Multi-Business Portfolio Optimizer (Subgraph Overlap Deduplication)</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <select id="selPortfolioK" onchange="loadPortfolio()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;">
+                  <option value="1">1 Grantee</option>
+                  <option value="2" selected>2 Grantees (Recommended $50k)</option>
+                  <option value="3">3 Grantees</option>
+                  <option value="4">4 Grantees</option>
+                </select>
+                <select id="selPortfolioPool" onchange="loadPortfolio()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;">
+                  <option value="50000" selected>$50,000 Pool</option>
+                  <option value="75000">$75,000 Pool</option>
+                  <option value="100000">$100,000 Pool</option>
+                </select>
+              </div>
+            </h2>
+            <div id="portfolioGuidanceBox" style="font-size:12.2px; color:var(--muted); margin-bottom:8px;"></div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Slot</th>
+                  <th>Selected Business (NAICS)</th>
+                  <th>Marginal Score</th>
+                  <th>New Physical Protected</th>
+                  <th>Overlap</th>
+                  <th>Dynamic Grant</th>
+                </tr>
+              </thead>
+              <tbody id="portfolioTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: DATA HYGIENE, VIRTUAL MAILBOXES & EQUITY AUDIT -->
+    <div id="tabHygiene" class="tab-pane">
+      <div class="split-grid">
+        <div class="card">
+          <h2><span>Actionable Storefront Keystone Band (3–35 Reach) vs. Disqualified Centrality Traps</span></h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Section 11 & Section 13 Proof: Why our agent does NOT pick raw degree centrality winners (`Echo Chunk` at `2261 Market St` or `Primo` sole NAICS `3121`).
+          </p>
+          <h3 style="font-size:13px; color:var(--emerald);">A. Verified Brick-and-Mortar Keystone Band Candidates</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Address</th>
+                <th>NAICS4</th>
+                <th>1-Hop</th>
+                <th>2-Hop Reach</th>
+                <th>1-Hop Intensity</th>
+                <th>Keystone Score</th>
+              </tr>
+            </thead>
+            <tbody id="keystoneTableBody"></tbody>
+          </table>
+
+          <h3 style="font-size:13px; color:var(--rose); margin-top:18px;">B. Disqualified Naive Centrality Traps (Filtered Out by Agent)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Flagged Entity</th>
+                <th>Address</th>
+                <th>Raw 2-Hop Reach</th>
+                <th>Disqualification Reason</th>
+              </tr>
+            </thead>
+            <tbody id="trapTableBody"></tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2><span>Census ACS 2022 Tract Vulnerability (`LPAD(geo_id, 11, '0')`)</span></h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tract GEOID (11-Char)</th>
+                  <th>Storefronts</th>
+                  <th>Median Income</th>
+                  <th>Poverty Rate</th>
+                  <th>No-Vehicle Rate</th>
+                  <th>Need Multiplier</th>
+                </tr>
+              </thead>
+              <tbody id="tractTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h2><span>Entity Resolution: Duplicate DBA Tax Registrations & SBA 7(a) Charge-Offs</span></h2>
+            <div id="hygieneDetailsBox" style="font-size:13px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TRACK 3 ANCHOR CLOSURE SIMULATOR -->
+    <div id="tabAnchor" class="tab-pane">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <div>
+            <h2 style="margin:0;">Track 3: Two-Direction Anchor Closure Shock (`DrawsFootfall` + `Supplies`)</h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">
+              Traverses `(anchor:EmployerBlock)&lt;-[df:DrawsFootfall]-(b1:Business)&lt;-[s:Supplies]-(upstream:Business)` to identify both direct foot-traffic losses and second-order supplier losses.
+            </p>
+          </div>
+          <div style="min-width:340px;">
+            <select id="selAnchorBlock" onchange="loadAnchorShock()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:9px; border-radius:6px;">
+              <option value="060750171011001">Block 060750171011001 (Castro & Market / 400-500 Castro Anchor · 785 Jobs)</option>
+              <option value="060750171011003">Block 060750171011003 (18th & Castro Cultural Strip · 512 Jobs)</option>
+              <option value="060750202011002">Block 060750202011002 (Church & Market / 2100 Market Hub · 690 Jobs)</option>
+              <option value="060750169001001">Block 060750169001001 (Upper Market 2200-2300 Strip · 642 Jobs)</option>
+            </select>
+          </div>
+        </div>
+        <div id="anchorNarrative" class="memo-part warn" style="margin-bottom:14px;"></div>
+        <div class="split-grid">
+          <div>
+            <h3 style="font-size:13.5px; color:var(--accent);">1. Direct Footfall-Dependent Storefronts Hurt (`&lt;-[df:DrawsFootfall]-`)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Storefront Business</th>
+                  <th>Address</th>
+                  <th>Sector</th>
+                  <th>Footfall Pull</th>
+                  <th>Distance</th>
+                </tr>
+              </thead>
+              <tbody id="anchorDirectBody"></tbody>
+            </table>
+          </div>
+          <div>
+            <h3 style="font-size:13.5px; color:var(--accent-2);">2. Upstream Corridor Suppliers Indirectly Hurt (`&lt;-[s:Supplies]-`)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Upstream Supplier</th>
+                  <th>Address</th>
+                  <th>Affected Buyers</th>
+                  <th>Joint Shock Score</th>
+                  <th>Storefront Buyers Hurt</th>
+                </tr>
+              </thead>
+              <tbody id="anchorUpstreamBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: +10 BONUS MERCHANT SUPPLIER INTAKE & ADK CHAT -->
+    <div id="tabBonus" class="tab-pane">
+      <div class="split-grid">
+        <div class="card">
+          <h2>
+            <span>+10 Bonus Deliverable ("What's Next"): Live Merchant Supplier Intake</span>
+            <span class="tag tag-verified">REAL vs. MODELED Upgrade</span>
+          </h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Our Part 6 disclosure notes that `Supplies` edges are modeled from BEA Make-Use tables × distance decay.
+            When a merchant applies for a micro-grant and names their real local suppliers, this tool upgrades the edge to
+            <b>Merchant-Verified Ground Truth (`is_verified=true`)</b> and recomputes the corridor cascade live.
+          </p>
+          <div style="display:grid; gap:10px; margin-bottom:14px;">
+            <div class="ctrl-group">
+              <label><span>Upstream Local Supplier (Market/Castro)</span></label>
+              <input type="text" id="inpSupplier" value="Theatre Rhinoceros" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Downstream Local Buyer (Market/Castro)</span></label>
+              <input type="text" id="inpBuyer" value="The Castro" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Verified Dependency Intensity (0.05 – 0.85)</span></label>
+              <input type="number" id="inpShare" step="0.05" min="0.05" max="0.85" value="0.42" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Verification Source / Invoice Reference</span></label>
+              <input type="text" id="inpNote" value="Co-production & ticketing agreement verified during Friday intake" />
+            </div>
+            <button class="btn" onclick="submitVerifiedEdge()">Record Verified Edge & Recompute Graph Cascade</button>
+          </div>
+          <div id="intakeResultBox" style="display:none;">
+            <div class="memo-part good" id="intakeSummaryText" style="margin-bottom:10px;"></div>
+            <div style="font-size:11.5px; color:var(--muted); margin-bottom:4px;">Generated BigQuery `MERGE` DML Statement:</div>
+            <div class="code-box" id="intakeDmlBox"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2><span>Interactive ADK Grant Defense Agent Q&A</span></h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Ask committee challenge questions (e.g., <i>"Compare Theatre Rhinoceros vs Canela"</i>, <i>"Why not fund Primo or Echo Chunk at 2261 Market St?"</i>, or <i>"Simulate Castro Station anchor closure"</i>).
+          </p>
+          <div class="chat-log" id="chatLog">
+            <div class="chat-msg">
+              <b>ADK Grant Defense Agent:</b> Ready for Friday Grant Committee questioning on the <code>market-castro</code> corridor. Try one of the quick committee prompts below or type your own question.
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <button class="btn-secondary" onclick="sendQuickChat('Why should we fund Theatre Rhinoceros over Cafe Du Nord or Canela?')">Compare vs. Cafe Du Nord & Canela</button>
+            <button class="btn-secondary" onclick="sendQuickChat('Audit virtual mailbox bias at 2261 Market St and Primo monopoly')">Why Not Raw Centrality Winner?</button>
+            <button class="btn-secondary" onclick="sendQuickChat('What happens if the Castro Station employer block closes?')">Simulate Anchor Block Shock</button>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="chatInput" placeholder="Ask the Market/Castro ADK Agent..." style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:9px;" onkeydown="if(event.key==='Enter') sendChat()" />
+            <button class="btn" onclick="sendChat()">Ask Agent</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let overviewData = null;
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleJsonModal() {
+      const wrap = document.getElementById('gqlInspectorWrap');
+      wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function resetDefaults() {
+      document.getElementById('selPrimary').value = 'Theatre Rhinoceros';
+      document.getElementById('selRunnerUp').value = 'Cafe Du Nord';
+      document.getElementById('rngGrant').value = 25000;
+      document.getElementById('rngPFailNo').value = 0.65;
+      document.getElementById('rngPFailYes').value = 0.15;
+      document.getElementById('rngSubDisc').value = 0.20;
+      refreshMemo();
+    }
+
+    async function initDashboard() {
+      const res = await fetch('/api/overview');
+      overviewData = await res.json();
+      renderMemo(overviewData.default_memo);
+      renderHygieneAndEquity(overviewData.discovery, overviewData.audit_highlights);
+      if (overviewData.default_portfolio) {
+        renderPortfolio(overviewData.default_portfolio);
+      } else {
+        loadPortfolio();
+      }
+      loadAnchorShock();
+    }
+
+    async function loadPortfolio() {
+      const k = document.getElementById('selPortfolioK').value;
+      const pool = document.getElementById('selPortfolioPool').value;
+      const res = await fetch(`/api/portfolio?num_grantees=${encodeURIComponent(k)}&budget_pool=${encodeURIComponent(pool)}&deduplicate=true`);
+      const data = await res.json();
+      renderPortfolio(data);
+    }
+
+    function renderPortfolio(p) {
+      const warnHtml = (p.dilution_warnings || []).length > 0
+        ? `<div style="color:var(--rose);margin-top:4px;"><b>⚠️ Dilution Warning:</b> ${p.dilution_warnings.join(' ')}</div>`
+        : `<div style="color:var(--emerald);margin-top:4px;">✓ All grants meet the $${p.min_effective_grant_usd.toLocaleString()} minimum survival runway floor. Total unique physical storefronts protected: <b>${p.total_unique_physical_storefronts_protected}</b> (${p.total_unique_2hop_nodes_protected} total 2-hop nodes).</div>`;
+      document.getElementById('portfolioGuidanceBox').innerHTML = `<div>${p.committee_guidance}</div>${warnHtml}`;
+      document.getElementById('portfolioTableBody').innerHTML = (p.selected_portfolio || []).map(s => `
+        <tr>
+          <td><span class="tag tag-hop1">#${s.slot}</span></td>
+          <td><b>${s.name}</b><br/><span style="font-size:11px;color:var(--muted)">${s.address} · NAICS ${s.naics4}</span></td>
+          <td style="font-family:var(--mono)">${s.marginal_keystone_score}</td>
+          <td style="font-family:var(--mono);color:var(--emerald)"><b>+${s.new_unique_physical_added}</b> (cum ${s.cumulative_unique_physical_protected})</td>
+          <td style="font-family:var(--mono)">${s.subgraph_redundancy_pct}%</td>
+          <td style="font-family:var(--mono);color:${s.meets_minimum_survival_floor ? 'var(--emerald)' : 'var(--rose)'}">
+            <b>$${s.recommended_grant_usd.toLocaleString()}</b>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function refreshMemo() {
+      const biz = document.getElementById('selPrimary').value;
+      const runner = document.getElementById('selRunnerUp').value;
+      const grant = parseFloat(document.getElementById('rngGrant').value);
+      const pNo = parseFloat(document.getElementById('rngPFailNo').value);
+      const pYes = parseFloat(document.getElementById('rngPFailYes').value);
+      const subDisc = parseFloat(document.getElementById('rngSubDisc').value);
+
+      document.getElementById('lblGrantAmt').textContent = `$${grant.toLocaleString()} / $50,000 Pool`;
+      document.getElementById('lblPFailNo').textContent = `${Math.round(pNo * 100)}%`;
+      document.getElementById('lblPFailYes').textContent = `${Math.round(pYes * 100)}%`;
+      document.getElementById('lblSubDisc').textContent = `${Math.round(subDisc * 100)}%`;
+
+      const qs = new URLSearchParams({
+        business: biz,
+        runner_up: runner,
+        grant_amount: grant,
+        budget_pool: 50000,
+        p_fail_no_grant: pNo,
+        p_fail_grant: pYes,
+        sub_discount: subDisc
+      });
+      const res = await fetch(`/api/memo?${qs.toString()}`);
+      const memo = await res.json();
+      renderMemo(memo);
+    }
+
+    function renderMemo(m) {
+      document.getElementById('focalIdBadge').textContent = m.recommended_business_id;
+      document.getElementById('kpiExpectedJobs').textContent = `${m.expected_jobs_saved_delta} jobs`;
+      document.getElementById('kpiCostPerJob').textContent = `$${m.cost_per_expected_job_saved_usd.toLocaleString()}/job`;
+      document.getElementById('memoHeaderBadge').textContent =
+        `${m.direct_1hop_count} Direct + ${m.indirect_2hop_count} Indirect (${m.total_2hop_exposed_count} Exposed)`;
+
+      document.getElementById('part1Body').innerHTML =
+        `<b>${m.recommended_business_name}</b> (<code>${m.recommended_business_id}</code> · <b>${m.recommended_address}</b> · NAICS <code>${m.recommended_naics4}</code> ${m.recommended_naics_label}).<br/>` +
+        `<span style="color:var(--emerald);font-weight:600;">Grant Allocation: $${m.grant_amount_usd.toLocaleString()}</span> — ${m.allocation_split_note}`;
+
+      document.getElementById('part2Body').innerHTML =
+        `Protects <b>${m.direct_1hop_count} direct 1-hop buyers</b> (summed 1-hop intensity = <code>${m.total_1hop_intensity}</code>) and ` +
+        `<b>${m.indirect_2hop_count} indirect 2-hop buyers</b> (<b>${m.total_2hop_exposed_count} total downstream nodes</b>; ` +
+        `<b>${m.brick_and_mortar_exposed_count} verified physical storefronts</b>). ` +
+        `Total corridor jobs exposed: <b>${m.estimated_downstream_jobs_protected} jobs</b> &rarr; ` +
+        `<b>${m.expected_jobs_saved_delta} expected jobs saved</b> (<b>$${m.cost_per_expected_job_saved_usd.toLocaleString()}</b> per expected job saved).`;
+
+      document.getElementById('part3Body').innerHTML =
+        `Executed BigQuery Property Graph <code>ANY SHORTEST</code> path traversal over <code>a4i_econ.LocalEconomy</code>, ` +
+        `returning <code>${m.to_json_paths.length}</code> serialized <code>TO_JSON(p)</code> paths across 1-to-2 hops (rendered live in the SVG topology and table on the right).`;
+
+      document.getElementById('part4Body').innerHTML =
+        `<div style="margin-bottom:6px;"><b>Why Not Runner-Up (${m.runner_up_business_name}):</b> ${m.why_not_runner_up}</div>` +
+        `<div style="margin-bottom:6px;"><b>Why Not Raw Centrality Winner:</b> ${m.why_not_biggest_hub}</div>` +
+        `<div style="font-size:12px;color:var(--muted);">${m.duplicate_registration_note}</div>`;
+
+      document.getElementById('part5Body').innerHTML = m.assumptions_statement;
+      document.getElementById('part6Body').innerHTML =
+        `<div>${m.real_vs_modeled_statement}</div>` +
+        `<div style="margin-top:6px;font-size:12px;color:var(--accent-2);"><b>SBA 7(a) Validation:</b> ${m.sba_loan_validation_note}</div>`;
+
+      const tc = m.tract_context;
+      document.getElementById('part7Body').innerHTML =
+        `Located in <b>${tc.tract_name}</b> (11-char ACS GEOID <code>${tc.tract_geoid}</code> · Pop <code>${tc.total_pop.toLocaleString()}</code>): ` +
+        `Median household income <b>$${tc.median_income.toLocaleString()}</b>, Poverty rate <b>${(tc.poverty_rate * 100).toFixed(1)}%</b> ` +
+        `(corridor avg ${(tc.corridor_avg_poverty_rate * 100).toFixed(1)}%), Car-free households <b>${(tc.no_vehicle_rate * 100).toFixed(1)}%</b> ` +
+        `(corridor avg ${(tc.corridor_avg_no_vehicle_rate * 100).toFixed(1)}%), Relative Equity Need Multiplier <code>${tc.relative_need_multiplier}x</code>.`;
+
+      document.getElementById('gqlQueryBox').textContent = m.gql_query_executed;
+      document.getElementById('toJsonBox').textContent = JSON.stringify(m.to_json_paths.slice(0, 2), null, 2);
+
+      renderCascadeTable(m.cascade_nodes);
+      renderCascadeSvg(m);
+    }
+
+    function renderCascadeTable(nodes) {
+      const tbody = document.getElementById('cascadeTableBody');
+      tbody.innerHTML = nodes.map(n => `
+        <tr>
+          <td>
+            <span class="tag ${n.hop === 1 ? 'tag-hop1' : 'tag-hop2'}">Hop ${n.hop}</span>
+            ${n.is_verified_edge ? '<span class="tag tag-verified">VERIFIED</span>' : ''}
+          </td>
+          <td><b>${n.name}</b><br/><span style="font-size:11px;color:var(--muted)">${n.naics_label}</span></td>
+          <td>${n.address}</td>
+          <td>${n.via_business_name ? n.via_business_name : '<span style="color:var(--muted)">Direct (Hop 1)</span>'}</td>
+          <td style="font-family:var(--mono)">${n.compounded_intensity}</td>
+          <td style="font-family:var(--mono)">${n.metres}m</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCascadeSvg(memo) {
+      const svg = document.getElementById('cascadeSvg');
+      const cx = 340, cy = 210;
+      const nodes = memo.cascade_nodes || [];
+      const hop1 = nodes.filter(n => n.hop === 1).slice(0, 10);
+      const hop2 = nodes.filter(n => n.hop === 2).slice(0, 14);
+
+      let html = '';
+      // Guide rings
+      html += `<circle cx="${cx}" cy="${cy}" r="105" fill="none" stroke="#1e293b" stroke-dasharray="4 4" />`;
+      html += `<circle cx="${cx}" cy="${cy}" r="182" fill="none" stroke="#1e293b" stroke-dasharray="3 5" />`;
+
+      const hop1Coords = {};
+      hop1.forEach((n, idx) => {
+        const angle = (2 * Math.PI * idx) / Math.max(hop1.length, 1) - Math.PI / 2;
+        hop1Coords[n.business_id] = {
+          x: cx + 105 * Math.cos(angle),
+          y: cy + 105 * Math.sin(angle),
+          node: n
+        };
+      });
+
+      const hop2Coords = hop2.map((n, idx) => {
+        const angle = (2 * Math.PI * idx) / Math.max(hop2.length, 1) - Math.PI / 3;
+        return {
+          x: cx + 182 * Math.cos(angle),
+          y: cy + 182 * Math.sin(angle),
+          node: n
+        };
+      });
+
+      // Draw Hop 1 -> Hop 2 edges
+      hop2Coords.forEach(h2 => {
+        const via = hop1Coords[h2.node.via_business_id];
+        const sx = via ? via.x : cx;
+        const sy = via ? via.y : cy;
+        html += `<line x1="${sx}" y1="${sy}" x2="${h2.x}" y2="${h2.y}" stroke="#0284c7" stroke-opacity="0.55" stroke-width="1.5" />`;
+      });
+
+      // Draw Focal -> Hop 1 edges
+      Object.values(hop1Coords).forEach(h1 => {
+        const strokeColor = h1.node.is_verified_edge ? '#f59e0b' : '#10b981';
+        const width = Math.max(2, Math.min(5.5, h1.node.edge_intensity * 26));
+        html += `<line x1="${cx}" y1="${cy}" x2="${h1.x}" y2="${h1.y}" stroke="${strokeColor}" stroke-opacity="0.85" stroke-width="${width}" />`;
+      });
+
+      // Draw Hop 2 nodes
+      hop2Coords.forEach(h2 => {
+        const fill = h2.node.is_virtual_mailbox ? '#f43f5e' : '#38bdf8';
+        html += `<g>
+          <circle cx="${h2.x}" cy="${h2.y}" r="6.5" fill="${fill}" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="${h2.x}" y="${h2.y - 9}" text-anchor="middle" fill="#cbd5e1" font-size="9.5">${h2.node.name.slice(0, 18)}</text>
+        </g>`;
+      });
+
+      // Draw Hop 1 nodes
+      Object.values(hop1Coords).forEach(h1 => {
+        const fill = h1.node.is_virtual_mailbox ? '#f43f5e' : '#10b981';
+        html += `<g>
+          <circle cx="${h1.x}" cy="${h1.y}" r="9" fill="${fill}" stroke="#0f172a" stroke-width="2"/>
+          <text x="${h1.x}" y="${h1.y - 12}" text-anchor="middle" fill="#ecfdf5" font-weight="600" font-size="10.5">${h1.node.name.slice(0, 20)}</text>
+        </g>`;
+      });
+
+      // Draw Focal node
+      html += `<g>
+        <circle cx="${cx}" cy="${cy}" r="15" fill="#f59e0b" stroke="#fff" stroke-width="2.5"/>
+        <text x="${cx}" y="${cy + 27}" text-anchor="middle" fill="#fde68a" font-weight="700" font-size="11.5">${memo.recommended_business_name}</text>
+      </g>`;
+
+      svg.innerHTML = html;
+    }
+
+    function renderHygieneAndEquity(discovery, audit) {
+      const ktBody = document.getElementById('keystoneTableBody');
+      ktBody.innerHTML = (discovery.actionable_keystone_candidates || []).map(c => `
+        <tr>
+          <td><b>${c.name}</b></td>
+          <td>${c.address}</td>
+          <td><code>${c.naics4}</code> ${c.naics_label}</td>
+          <td style="font-family:var(--mono)">${c.direct_1hop_count}</td>
+          <td style="font-family:var(--mono)"><b>${c.total_2hop_exposed_count}</b></td>
+          <td style="font-family:var(--mono)">${c.total_1hop_intensity}</td>
+          <td style="font-family:var(--mono);color:var(--emerald)"><b>${c.actionable_keystone_score}</b></td>
+        </tr>
+      `).join('');
+
+      const trapBody = document.getElementById('trapTableBody');
+      trapBody.innerHTML = (discovery.disqualified_naive_centrality_traps || []).map(t => `
+        <tr>
+          <td><b>${t.name}</b> (<code>${t.business_id}</code>)</td>
+          <td>${t.address}</td>
+          <td style="font-family:var(--mono)">${t.total_2hop_exposed_count}</td>
+          <td>
+            <span class="tag tag-trap">
+              ${t.is_virtual_mailbox_hub
+                ? `Virtual Mailbox Hub (${t.address_co_tenant_count} co-tenants at same street address)`
+                : `Sole NAICS ${t.naics4} Supplier Monopoly Artifact (${t.direct_1hop_count} mechanical links)`}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+      const tractBody = document.getElementById('tractTableBody');
+      tractBody.innerHTML = (audit.tracts || []).map(t => `
+        <tr>
+          <td style="font-family:var(--mono)"><b>${t.geo_id}</b></td>
+          <td style="font-family:var(--mono)">${t.businesses_in_tract}</td>
+          <td style="font-family:var(--mono)">$${t.median_income.toLocaleString()}</td>
+          <td style="font-family:var(--mono)">${(t.poverty_rate * 100).toFixed(1)}%</td>
+          <td style="font-family:var(--mono)">${(t.no_vehicle_rate * 100).toFixed(1)}%</td>
+          <td style="font-family:var(--mono);color:var(--accent)"><b>${t.relative_need_multiplier}x</b></td>
+        </tr>
+      `).join('');
+
+      const dups = (audit.duplicate_dbas || []).map(d =>
+        `<li><b>${d.records.map(r => `${r.name} (${r.address}, ID ${r.business_id})`).join(' &harr; ')}</b></li>`
+      ).join('');
+      const chgoffs = (audit.sba_loans?.chargeoff_loans || []).map(l =>
+        `<li><b>${l.borrower_name}</b> (${l.borrower_address}) — Gross Approval <b>$${l.gross_approval.toLocaleString()}</b>, Charged Off <b>$${l.chargeoff_amount.toLocaleString()}</b> on ${l.chargeoff_date}</li>`
+      ).join('');
+
+      document.getElementById('hygieneDetailsBox').innerHTML = `
+        <div style="margin-bottom:10px;">
+          <b style="color:var(--accent);">Duplicate DBA Tax Registrations Detected in Market/Castro:</b>
+          <ul style="margin:6px 0; padding-left:18px;">${dups}</ul>
+        </div>
+        <div>
+          <b style="color:var(--rose);">Historical SBA 7(a) Charge-Off Ground Truth (Liquidity Default Proof):</b>
+          <ul style="margin:6px 0; padding-left:18px;">${chgoffs}</ul>
+        </div>
+      `;
+    }
+
+    async function loadAnchorShock() {
+      const blk = document.getElementById('selAnchorBlock').value;
+      const res = await fetch(`/api/anchor-shock?anchor=${encodeURIComponent(blk)}`);
+      const data = await res.json();
+      document.getElementById('anchorNarrative').innerHTML =
+        `<b>Shock Simulation:</b> ${data.narrative_summary}`;
+
+      document.getElementById('anchorDirectBody').innerHTML =
+        (data.top_footfall_dependent_storefronts || []).map(s => `
+          <tr>
+            <td><b>${s.name}</b></td>
+            <td>${s.address}</td>
+            <td>${s.naics_label}</td>
+            <td style="font-family:var(--mono)">${s.footfall_weight}</td>
+            <td style="font-family:var(--mono)">${s.metres_from_anchor}m</td>
+          </tr>
+        `).join('');
+
+      document.getElementById('anchorUpstreamBody').innerHTML =
+        (data.top_upstream_suppliers_at_risk || []).map(u => `
+          <tr>
+            <td><b>${u.supplier_name}</b></td>
+            <td>${u.supplier_address}</td>
+            <td style="font-family:var(--mono)">${u.affected_buyers_count}</td>
+            <td style="font-family:var(--mono);color:var(--accent-2)"><b>${u.cumulative_joint_shock_score}</b></td>
+            <td style="font-size:11.5px;color:var(--muted)">${u.affected_storefront_buyers.join(', ')}</td>
+          </tr>
+        `).join('');
+    }
+
+    async function submitVerifiedEdge() {
+      const payload = {
+        supplier_query: document.getElementById('inpSupplier').value,
+        buyer_query: document.getElementById('inpBuyer').value,
+        reported_dependency_share: parseFloat(document.getElementById('inpShare').value),
+        invoice_note: document.getElementById('inpNote').value
+      };
+      const res = await fetch('/api/merchant-intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const wrap = document.getElementById('intakeResultBox');
+      wrap.style.display = 'block';
+      if (data.status === 'error') {
+        document.getElementById('intakeSummaryText').innerHTML = `<span style="color:var(--rose)">${data.message}</span>`;
+        return;
+      }
+      const d = data.cascade_impact_delta;
+      document.getElementById('intakeSummaryText').innerHTML =
+        `<b>${data.action}</b><br/>` +
+        `Supplier <b>${data.supplier.name}</b> &rarr; Buyer <b>${data.buyer.name}</b> (${data.distance_metres}m).<br/>` +
+        `1-Hop Intensity shifted from <code>${d.before_1hop_intensity}</code> &rarr; <b><code>${d.after_1hop_intensity}</code></b> | ` +
+        `Protected Corridor Jobs: <code>${d.before_jobs_protected}</code> &rarr; <b><code>${d.after_jobs_protected}</code></b>.`;
+      document.getElementById('intakeDmlBox').textContent = data.bigquery_dml_statement;
+      refreshMemo();
+    }
+
+    async function sendQuickChat(text) {
+      document.getElementById('chatInput').value = text;
+      await sendChat();
+    }
+
+    async function sendChat() {
+      const inp = document.getElementById('chatInput');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      inp.value = '';
+      const log = document.getElementById('chatLog');
+      log.innerHTML += `<div class="chat-msg"><b>Grant Officer:</b> ${msg}</div>`;
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      const formatted = (data.reply || '').replace(/\n/g, '<br/>');
+      log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${data.tool_called}</code>):</b><br/>${formatted}</div>`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
