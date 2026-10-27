@@ -7,15 +7,26 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+try:
+    from agent.server import handle_api_get as mc_handle_get, handle_api_post as mc_handle_post
+except Exception:
+    mc_handle_get = None
+    mc_handle_post = None
 
 from grant_officer_agent.agent import (
     SYSTEM_INSTRUCTION,
@@ -90,6 +101,37 @@ async def serve_ui():
     if index_path.exists():
         return FileResponse(str(index_path))
     return HTMLResponse("<h1>Grant Officer UI loading...</h1>")
+
+
+@app.get("/market-castro", response_class=HTMLResponse)
+async def serve_market_castro_ui():
+    mc_path = STATIC_DIR / "market_castro_console.html"
+    if mc_path.exists():
+        return FileResponse(str(mc_path))
+    return HTMLResponse("<h1>Market/Castro Defense Console loading...</h1>")
+
+
+@app.get("/api/overview")
+@app.get("/api/portfolio")
+@app.get("/api/candidates")
+@app.get("/api/memo")
+@app.get("/api/compare")
+@app.get("/api/anchor-shock")
+@app.get("/api/equity-audit")
+async def serve_market_castro_get_endpoints(request: Request):
+    if mc_handle_get is not None:
+        status, payload = mc_handle_get(request.url.path, request.url.query)
+        return JSONResponse(status_code=status, content=payload)
+    return JSONResponse(status_code=503, content={"error": "Market/Castro engine unavailable"})
+
+
+@app.post("/api/merchant-intake")
+async def serve_market_castro_intake(request: Request):
+    if mc_handle_post is not None:
+        body = await request.json()
+        status, payload = mc_handle_post("/api/merchant-intake", body)
+        return JSONResponse(status_code=status, content=payload)
+    return JSONResponse(status_code=503, content={"error": "Market/Castro engine unavailable"})
 
 
 @app.get("/api/health")
@@ -399,6 +441,7 @@ async def chat_with_agent(req: ChatRequest):
             if response_texts:
                 return {
                     "reply": "\n".join(response_texts),
+                    "tool_called": "google-adk-gemini-live",
                     "engine": "google-adk-gemini-live",
                     "session_id": session_id,
                 }
@@ -409,6 +452,7 @@ async def chat_with_agent(req: ChatRequest):
     reply = _answer_officer_question_deterministically(req)
     return {
         "reply": reply,
+        "tool_called": "adk-graph-tool-engine",
         "engine": "adk-graph-tool-engine",
         "session_id": req.session_id or "demo-session",
     }
