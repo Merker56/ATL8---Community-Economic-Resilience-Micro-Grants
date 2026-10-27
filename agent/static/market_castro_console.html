@@ -329,7 +329,9 @@
           <p>BigQuery Property Graph (GQL) · `a4i_econ.LocalEconomy` · San Francisco Commercial Corridor</p>
         </div>
       </div>
-      <div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <button class="btn" onclick="openAndRunWorkflowTab()">⚡ Run 3-Sub-Agent E2E Workflow</button>
+        <a href="/multi-corridor" class="btn-secondary" style="text-decoration:none; display:inline-block;">🌐 10-Corridor & 30-Check QA Suite</a>
         <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Meeting Preset ($25k + $25k Split)</button>
       </div>
     </div>
@@ -408,6 +410,7 @@
       <button class="tab-btn" onclick="switchTab('tabHygiene', this)">2. Why Not Naive Centrality? (Bias, Virtual Mailboxes & Equity Audit)</button>
       <button class="tab-btn" onclick="switchTab('tabAnchor', this)">3. Track 3: Two-Direction Anchor Closure Simulator</button>
       <button class="tab-btn" onclick="switchTab('tabBonus', this)">4. +10 Bonus: Live Merchant Supplier Intake & ADK Agent Q&A</button>
+      <button class="tab-btn" id="btnTabWorkflow" onclick="switchTab('tabWorkflow', this)">5. Member 2: ADK Multi-Agent Hierarchy, MCP & E2E Workflow</button>
     </div>
 
     <!-- TAB 1: 7-PART MEMO & CASCADE VISUALIZER -->
@@ -699,6 +702,7 @@
             </div>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <button class="btn-secondary" onclick="sendQuickChat('Run the end-to-end multi-agent workflow')">⚡ Run 3-Sub-Agent Workflow</button>
             <button class="btn-secondary" onclick="sendQuickChat('Why should we fund Theatre Rhinoceros over Cafe Du Nord or Canela?')">Compare vs. Cafe Du Nord & Canela</button>
             <button class="btn-secondary" onclick="sendQuickChat('Audit virtual mailbox bias at 2261 Market St and Primo monopoly')">Why Not Raw Centrality Winner?</button>
             <button class="btn-secondary" onclick="sendQuickChat('What happens if the Castro Station employer block closes?')">Simulate Anchor Block Shock</button>
@@ -707,6 +711,88 @@
             <input type="text" id="chatInput" placeholder="Ask the Market/Castro ADK Agent..." style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:9px;" onkeydown="if(event.key==='Enter') sendChat()" />
             <button class="btn" onclick="sendChat()">Ask Agent</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: MEMBER 2 ADK MULTI-AGENT HIERARCHY, MCP & E2E WORKFLOW -->
+    <div id="tabWorkflow" class="tab-pane">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <div>
+            <h2 style="margin:0;">Member 2: Google ADK Multi-Agent Hierarchy (`agent/agent.py`) & End-to-End Orchestration (`/api/workflow`)</h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">
+              Coordinates <code>root_agent: market_castro_grant_advisor</code> across 3 specialist sub-agents, Managed BigQuery MCP (<code>https://bigquery.googleapis.com/mcp</code>), and 5 parameterized GQL tools in <code>agent/tools.yaml</code>.
+            </p>
+          </div>
+          <button class="btn" onclick="runE2EWorkflow()">⚡ Execute 3-Sub-Agent Sequential Pipeline Now</button>
+        </div>
+
+        <!-- Visual Multi-Agent Hierarchy Tree (Matches PRD Section 3.2 Diagram) -->
+        <div style="background:#070b16; border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:16px;">
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="display:inline-block; background:rgba(56, 189, 248, 0.14); border:2px solid var(--accent); border-radius:10px; padding:10px 22px;">
+              <div style="font-family:var(--mono); font-weight:700; color:var(--accent); font-size:13.5px;">root_agent: market_castro_grant_advisor</div>
+              <div style="font-size:12px; color:var(--text);">Coordinator &amp; Conversational Router (Gemini 2.5 Pro · 9 Tools + BigQuery MCP)</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+            <div style="background:var(--panel-alt); border:1px solid #10b981; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#34d399; font-size:12.5px; margin-bottom:4px;">Sub-Agent 1: graph_cascade_analyst</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Graph Cascade &amp; Anchor Shock Specialist</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • discover_cascade_candidates<br/>
+                • simulate_anchor_closure<br/>
+                • BigQuery MCP (a4i_econ.LocalEconomy)
+              </div>
+            </div>
+            <div style="background:var(--panel-alt); border:1px solid #f59e0b; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#fbbf24; font-size:12.5px; margin-bottom:4px;">Sub-Agent 2: equity_bias_auditor</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Equity, Data Hygiene &amp; Ground-Truth Auditor</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • audit_corridor_equity_and_bias<br/>
+                • add_verified_merchant_supplier (+10 Bonus)
+              </div>
+            </div>
+            <div style="background:var(--panel-alt); border:1px solid #a855f7; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#c084fc; font-size:12.5px; margin-bottom:4px;">Sub-Agent 3: grant_portfolio_defender</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Friday Committee Memo &amp; Portfolio Optimizer</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • generate_friday_grant_memo<br/>
+                • compare_grant_candidates<br/>
+                • optimize_corridor_portfolio
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="workflowSummaryBanner" class="memo-part good" style="margin-bottom:14px;">
+          Click <b>Execute 3-Sub-Agent Sequential Pipeline Now</b> to run <code>graph_cascade_analyst</code> &rarr; <code>equity_bias_auditor</code> &rarr; <code>grant_portfolio_defender</code> end-to-end.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Sub-Agent Name</th>
+              <th>Specialist Role</th>
+              <th>Tools Invoked</th>
+              <th>Latency</th>
+              <th>Key Findings Summary</th>
+            </tr>
+          </thead>
+          <tbody id="workflowTracesBody"></tbody>
+        </table>
+      </div>
+
+      <div class="split-grid">
+        <div class="card">
+          <h2><span>MCP Toolbox (`agent/tools.yaml`) &amp; BigQuery Bridge Status (`/api/mcp-status`)</span></h2>
+          <div class="code-box" id="mcpStatusBox">Loading MCP status...</div>
+        </div>
+        <div class="card">
+          <h2><span>End-to-End Cross-Member Integration Contract (`/api/health`)</span></h2>
+          <div class="code-box" id="healthStatusBox">Loading system integration status...</div>
         </div>
       </div>
     </div>
@@ -748,6 +834,60 @@
         loadPortfolio();
       }
       loadAnchorShock();
+      runE2EWorkflow();
+    }
+
+    function openAndRunWorkflowTab() {
+      const btn = document.getElementById('btnTabWorkflow');
+      if (btn) switchTab('tabWorkflow', btn);
+      runE2EWorkflow();
+    }
+
+    async function runE2EWorkflow() {
+      const pool = document.getElementById('selPortfolioPool') ? document.getElementById('selPortfolioPool').value : 50000;
+      const k = document.getElementById('selPortfolioK') ? document.getElementById('selPortfolioK').value : 2;
+      const biz = document.getElementById('selPrimary') ? document.getElementById('selPrimary').value : 'Theatre Rhinoceros';
+      const runner = document.getElementById('selRunnerUp') ? document.getElementById('selRunnerUp').value : 'Cafe Du Nord';
+      const anchor = document.getElementById('selAnchorBlock') ? document.getElementById('selAnchorBlock').value : '060750171011001';
+
+      const res = await fetch('/api/workflow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          corridor_name: 'Market/Castro',
+          budget_pool_usd: parseFloat(pool),
+          num_grantees: parseInt(k, 10),
+          primary_candidate_query: biz,
+          runner_up_query: runner,
+          anchor_block_query: anchor
+        })
+      });
+      const wf = await res.json();
+      const banner = document.getElementById('workflowSummaryBanner');
+      if (banner && wf.workflow_id) {
+        banner.innerHTML =
+          `<b>Workflow ID:</b> <code>${wf.workflow_id}</code> · <b>Mode:</b> <code>${wf.execution_mode}</code> · ` +
+          `<b>Total Execution Time:</b> <code>${wf.total_execution_ms} ms</code><br/>` +
+          `<b>Executive Committee Brief:</b> ${wf.executive_committee_brief}`;
+      }
+      const tbody = document.getElementById('workflowTracesBody');
+      if (tbody && wf.sub_agent_traces) {
+        tbody.innerHTML = wf.sub_agent_traces.map(t => `
+          <tr>
+            <td><span class="tag tag-hop1">Step ${t.step_order}</span></td>
+            <td style="font-family:var(--mono);font-weight:700;color:var(--accent)">${t.sub_agent_name}</td>
+            <td>${t.role_description}</td>
+            <td style="font-family:var(--mono);font-size:11.5px">${(t.tools_invoked || []).join(', ')}</td>
+            <td style="font-family:var(--mono);color:var(--emerald)">${t.execution_ms} ms</td>
+            <td>${t.key_findings_summary}</td>
+          </tr>
+        `).join('');
+      }
+      if (wf.extra && wf.extra.system_integration_status) {
+        const st = wf.extra.system_integration_status;
+        document.getElementById('mcpStatusBox').textContent = JSON.stringify(st.member2_multi_agent_and_mcp_ready, null, 2);
+        document.getElementById('healthStatusBox').textContent = JSON.stringify(st, null, 2);
+      }
     }
 
     async function loadPortfolio() {
@@ -1079,7 +1219,10 @@
       });
       const data = await res.json();
       const formatted = (data.reply || '').replace(/\n/g, '<br/>');
-      log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${data.tool_called}</code>):</b><br/>${formatted}</div>`;
+      const routeBadge = data.sub_agent_routed
+        ? `${data.root_orchestrator || 'market_castro_grant_advisor'} &rarr; ${data.sub_agent_routed} · ${data.tool_called}`
+        : data.tool_called;
+      log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${routeBadge}</code>):</b><br/>${formatted}</div>`;
       log.scrollTop = log.scrollHeight;
     }
 

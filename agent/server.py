@@ -15,7 +15,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from .agent import run_end_to_end_workflow, run_grant_officer_chat
+from .agent import (
+    get_multi_agent_hierarchy,
+    run_end_to_end_workflow,
+    run_grant_officer_chat,
+)
+from .mcp_config import get_mcp_and_bigquery_status
 from .tools import (
     ENGINE,
     add_verified_merchant_supplier,
@@ -56,6 +61,12 @@ def handle_api_get(path: str, query_string: str) -> tuple[int, dict[str, Any]]:
 
     if path == "/api/health":
         return 200, get_system_integration_status()
+
+    if path == "/api/hierarchy":
+        return 200, get_multi_agent_hierarchy()
+
+    if path == "/api/mcp-status":
+        return 200, get_mcp_and_bigquery_status()
 
     if path == "/api/workflow":
         res = run_end_to_end_workflow(
@@ -238,7 +249,11 @@ class GrantConsoleHTTPHandler(BaseHTTPRequestHandler):
             return
 
         # Serve Market/Castro console or Multi-Corridor Grant Officer UI
-        target_html = "index.html" if parsed.path == "/grant-officer" else "market_castro_console.html"
+        target_html = (
+            "multi_corridor_officer.html"
+            if parsed.path in ("/multi-corridor", "/grant-officer")
+            else "index.html"
+        )
         index_file = STATIC_DIR / target_html
         if not index_file.exists():
             index_file = STATIC_DIR / "index.html"
@@ -285,11 +300,20 @@ try:
     )
 
     @app.get("/")
+    @app.get("/market-castro")
     async def serve_index() -> HTMLResponse:
         index_file = STATIC_DIR / "index.html"
         if index_file.exists():
             return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
         return HTMLResponse(content="<h1>Static UI index.html not found</h1>", status_code=404)
+
+    @app.get("/multi-corridor")
+    @app.get("/grant-officer")
+    async def serve_multi_corridor() -> HTMLResponse:
+        mc_file = STATIC_DIR / "multi_corridor_officer.html"
+        if mc_file.exists():
+            return HTMLResponse(content=mc_file.read_text(encoding="utf-8"))
+        return HTMLResponse(content="<h1>Multi-corridor UI not found</h1>", status_code=404)
 
     @app.get("/api/{endpoint:path}")
     async def fastapi_get_router(endpoint: str, request: Request) -> JSONResponse:

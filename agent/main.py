@@ -23,8 +23,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 try:
+    from agent.agent import run_grant_officer_chat as mc_run_chat
     from agent.server import handle_api_get as mc_handle_get, handle_api_post as mc_handle_post
 except Exception:
+    mc_run_chat = None
     mc_handle_get = None
     mc_handle_post = None
 
@@ -88,7 +90,7 @@ class IntakeRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    corridor: str = "Central Market"
+    corridor: Optional[str] = None
     budget: float = 50000.0
     track: str = "main_street"
     split_mode: str = "split_two"
@@ -96,6 +98,7 @@ class ChatRequest(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/market-castro", response_class=HTMLResponse)
 async def serve_ui():
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
@@ -103,16 +106,19 @@ async def serve_ui():
     return HTMLResponse("<h1>Grant Officer UI loading...</h1>")
 
 
-@app.get("/market-castro", response_class=HTMLResponse)
-async def serve_market_castro_ui():
-    mc_path = STATIC_DIR / "market_castro_console.html"
+@app.get("/multi-corridor", response_class=HTMLResponse)
+@app.get("/grant-officer", response_class=HTMLResponse)
+async def serve_multi_corridor_ui():
+    mc_path = STATIC_DIR / "multi_corridor_officer.html"
     if mc_path.exists():
         return FileResponse(str(mc_path))
-    return HTMLResponse("<h1>Market/Castro Defense Console loading...</h1>")
+    return HTMLResponse("<h1>Multi-Corridor Grant Officer UI loading...</h1>")
 
 
 @app.get("/api/overview")
 @app.get("/api/workflow")
+@app.get("/api/hierarchy")
+@app.get("/api/mcp-status")
 @app.get("/api/portfolio")
 @app.get("/api/candidates")
 @app.get("/api/memo")
@@ -408,6 +414,13 @@ def _answer_officer_question_deterministically(req: ChatRequest) -> str:
 
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest):
+    # If called from Market/Castro PRD Console (no corridor specified or Market/Castro without Central Market QA prompts)
+    if (req.corridor is None or req.corridor == "Market/Castro") and mc_run_chat is not None:
+        return mc_run_chat(req.message)
+
+    if req.corridor is None:
+        req.corridor = "Central Market"
+
     # Try ADK Runner with Gemini first if credentials are configured in Cloud Run
     if root_agent is not None and os.environ.get("ENABLE_LIVE_GEMINI_CHAT", "true").lower() == "true":
         try:

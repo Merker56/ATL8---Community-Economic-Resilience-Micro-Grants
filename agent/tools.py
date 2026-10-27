@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from .mcp_config import execute_live_bigquery_gql
 from .schemas import DownstreamCascadeNode, FridayGrantMemo, TractEquityContext
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -503,9 +504,12 @@ FILTER WHERE direct_1hop_buyers + indirect_2hop_buyers BETWEEN 3 AND 35
 ORDER BY total_1hop_intensity DESC
 LIMIT 15;"""
 
+    bq_exec = execute_live_bigquery_gql(gql_query)
+
     return {
         "corridor": "Market/Castro",
         "gql_query_executed": gql_query,
+        "bigquery_execution_status": bq_exec,
         "filters_applied": {
             "exclude_virtual_mailboxes": exclude_virtual_mailboxes,
             "exclude_monopoly_artifacts": exclude_monopoly_artifacts,
@@ -700,7 +704,9 @@ RETURN
         sba_loan_validation_note=sba_note,
         tract_context=tract_p.__dict__,
     )
-    return memo.to_dict()
+    memo_dict = memo.to_dict()
+    memo_dict["bigquery_execution_status"] = execute_live_bigquery_gql(gql_path_query)
+    return memo_dict
 
 
 def compare_grant_candidates(
@@ -885,6 +891,8 @@ RETURN
 ORDER BY combined_shock_index DESC
 LIMIT 25;"""
 
+    bq_exec = execute_live_bigquery_gql(gql_query)
+
     return {
         "anchor_block": {
             "block_geoid": block_id,
@@ -893,6 +901,7 @@ LIMIT 25;"""
             "sector_note": blk.get("sector_note", ""),
         },
         "gql_query_executed": gql_query,
+        "bigquery_execution_status": bq_exec,
         "direct_footfall_storefronts_impacted": len(direct_storefronts),
         "upstream_suppliers_indirectly_impacted": len(ranked_upstream),
         "top_footfall_dependent_storefronts": direct_storefronts[:12],

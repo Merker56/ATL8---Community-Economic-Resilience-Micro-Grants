@@ -7,15 +7,15 @@
 
 ## 1. Cross-Validation Matrix Against Official Judging Rubric
 
-Every requirement in the official Challenge 03 brief and reference notebook ([`notebooks/c3_01_load_explore.ipynb`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/notebooks/c3_01_load_explore.ipynb)) has been cross-validated against our implementation:
+Every requirement in the official Challenge 03 brief and reference notebook ([`notebooks/c3_01_load_explore.ipynb`](../notebooks/c3_01_load_explore.ipynb)) has been cross-validated against our implementation:
 
 | Judging Criterion | Weight | Official Requirement / Trap to Avoid | Cross-Validated Implementation in Our Codebase | Owner |
 | :--- | :---: | :--- | :--- | :---: |
-| **1. Technical Implementation (BigQuery GQL, ADK, MCP)** | **30 pts** | Use genuine `GRAPH a4i_econ.LocalEconomy` GQL (`MATCH`, `NEXT`, `FILTER WHERE`, `ANY SHORTEST`, `TO_JSON(p)`), Google ADK multi-agent orchestration, and BigQuery MCP toolset. Obey all 7 GQL syntax traps. | [`sql/01_create_property_graph.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/01_create_property_graph.sql), [`sql/02_gql_cascade_queries.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/02_gql_cascade_queries.sql), [`agent/agent.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/agent.py) (`root_agent` + 3 sub-agents), [`agent/mcp_config.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/mcp_config.py). | **Member 1 & Member 2** |
-| **2. Data Hygiene & Bias Auditing** | **25 pts** | Do **not** blindly fund raw degree centrality winners (`Echo Chunk Inc.` at `2261 Market St` or `Primo` sole NAICS `3121` manufacturer). Catch duplicate DBAs and `LPAD(geo_id, 11, '0')` ACS join traps. | [`sql/03_equity_and_bias_audit.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/03_equity_and_bias_audit.sql) & [`audit_corridor_equity_and_bias`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.py) disqualify `140` virtual mailboxes at `2261 Market St`, `21` at `584 Castro St`, and `Primo` (`NAICS 3121`). | **Member 1 & Member 2** |
-| **3. Economic Reasoning & Portfolio Defense** | **25 pts** | *"Do not use the graph to produce a ranked list and then fund the top of it."* Frame grants around survival probability shift ($\Delta P$), substitutability, and subgraph overlap deduplication. | [`generate_friday_grant_memo`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.py#L497-L520) & [`optimize_corridor_portfolio`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.py#L1137-L1308) prove `#1 Theatre Rhinoceros` + `#2 Canela` have `0%` overlap (`13` physical storefronts protected), whereas `#3 The Castro` is `91.7%` redundant and `#4 Hi Tops` is `100%` redundant. | **Member 2** |
-| **4. Grant Officer UX & Storytelling** | **20 pts** | Interactive defense console showing all 7 parts of the Friday Grant Memo, visual `TO_JSON(p)` cascade paths, Track 3 two-direction anchor shock, and a 3-minute video demo. | [`agent/static/index.html`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/static/index.html), [`agent/server.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/server.py), [`docs/PITCH_DECK_AND_VIDEO_SCRIPT.md`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/docs/PITCH_DECK_AND_VIDEO_SCRIPT.md). | **Member 3** |
-| **5. "What's Next" Bonus Deliverable** | **+10 pts** | Close the loop between **Modeled BEA Edges** and **Merchant-Verified Ground Truth** during grant intake. | [`add_verified_merchant_supplier`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.py) (`POST /api/merchant-intake`) upgrades modeled edges to `is_verified=true`, recalculates cascade impact live, and outputs BigQuery `MERGE` DML. | **Member 2 & Member 3** |
+| **1. Technical Implementation (BigQuery GQL, ADK, MCP)** | **30 pts** | Use genuine `GRAPH a4i_econ.LocalEconomy` GQL (`MATCH`, `NEXT`, `FILTER WHERE`, `ANY SHORTEST`, `TO_JSON(p)`), Google ADK multi-agent orchestration, and BigQuery MCP toolset. Obey all 7 GQL syntax traps. | [`sql/01_create_property_graph.sql`](../sql/01_create_property_graph.sql), [`sql/02_gql_cascade_queries.sql`](../sql/02_gql_cascade_queries.sql), [`agent/agent.py`](../agent/agent.py) (`root_agent` + 3 sub-agents), [`agent/mcp_config.py`](../agent/mcp_config.py). | **Member 1 & Member 2** |
+| **2. Data Hygiene & Bias Auditing** | **25 pts** | Do **not** blindly fund raw degree centrality winners (`Echo Chunk Inc.` at `2261 Market St` or `Primo` sole NAICS `3121` manufacturer). Catch duplicate DBAs and `LPAD(geo_id, 11, '0')` ACS join traps. | [`sql/03_equity_and_bias_audit.sql`](../sql/03_equity_and_bias_audit.sql) & [`audit_corridor_equity_and_bias`](../agent/tools.py) disqualify `140` virtual mailboxes at `2261 Market St`, `21` at `584 Castro St`, and `Primo` (`NAICS 3121`). | **Member 1 & Member 2** |
+| **3. Economic Reasoning & Portfolio Defense** | **25 pts** | *"Do not use the graph to produce a ranked list and then fund the top of it."* Frame grants around survival probability shift ($\Delta P$), substitutability, and subgraph overlap deduplication. | [`generate_friday_grant_memo`](../agent/tools.py) & [`optimize_corridor_portfolio`](../agent/tools.py) prove `#1 Theatre Rhinoceros` + `#2 Canela` have `0%` overlap (`13` physical storefronts protected), whereas `#3 The Castro` is `91.7%` redundant and `#4 Hi Tops` is `100%` redundant. | **Member 2** |
+| **4. Grant Officer UX & Storytelling** | **20 pts** | Interactive defense console showing all 7 parts of the Friday Grant Memo, visual `TO_JSON(p)` cascade paths, Track 3 two-direction anchor shock, and a 3-minute video demo. | [`agent/static/index.html`](../agent/static/index.html), [`agent/server.py`](../agent/server.py), [`docs/PITCH_DECK_AND_VIDEO_SCRIPT.md`](PITCH_DECK_AND_VIDEO_SCRIPT.md). | **Member 3** |
+| **5. "What's Next" Bonus Deliverable** | **+10 pts** | Close the loop between **Modeled BEA Edges** and **Merchant-Verified Ground Truth** during grant intake. | [`add_verified_merchant_supplier`](../agent/tools.py) (`POST /api/merchant-intake`) upgrades modeled edges to `is_verified=true`, recalculates cascade impact live, and outputs BigQuery `MERGE` DML. | **Member 2 & Member 3** |
 
 ---
 
@@ -50,11 +50,11 @@ sequenceDiagram
 
 ### 3.1 Member 1: Data Pipeline & BigQuery Property Graph (`a4i_econ.LocalEconomy`)
 - **Owned Files:**
-  - [`scripts/build_local_corridor.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/scripts/build_local_corridor.py)
-  - [`data/market_castro_graph.json`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/data/market_castro_graph.json)
-  - [`sql/01_create_property_graph.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/01_create_property_graph.sql)
-  - [`sql/02_gql_cascade_queries.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/02_gql_cascade_queries.sql)
-  - [`sql/03_equity_and_bias_audit.sql`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/sql/03_equity_and_bias_audit.sql)
+  - [`scripts/build_local_corridor.py`](../scripts/build_local_corridor.py)
+  - [`data/market_castro_graph.json`](../data/market_castro_graph.json)
+  - [`sql/01_create_property_graph.sql`](../sql/01_create_property_graph.sql)
+  - [`sql/02_gql_cascade_queries.sql`](../sql/02_gql_cascade_queries.sql)
+  - [`sql/03_equity_and_bias_audit.sql`](../sql/03_equity_and_bias_audit.sql)
 
 #### Property Graph Schema (`a4i_econ.LocalEconomy`)
 - **Node Tables (2):**
@@ -71,16 +71,34 @@ sequenceDiagram
 
 ### 3.2 Member 2: Google ADK Multi-Agent System, MCP Toolset & Backend REST API
 - **Owned Files:**
-  - [`agent/agent.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/agent.py), [`agent/tools.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.py), [`agent/server.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/server.py), [`agent/mcp_config.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/mcp_config.py), [`agent/tools.yaml`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/tools.yaml), [`agent/schemas.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/schemas.py), [`agent/prompts.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/prompts.py)
+  - [`agent/agent.py`](../agent/agent.py)
+  - [`agent/tools.py`](../agent/tools.py)
+  - [`agent/server.py`](../agent/server.py)
+  - [`agent/mcp_config.py`](../agent/mcp_config.py) & [`agent/tools.yaml`](../agent/tools.yaml)
+  - [`agent/schemas.py`](../agent/schemas.py) & [`agent/prompts.py`](../agent/prompts.py)
 
-#### Multi-Agent Hierarchy ([`agent/agent.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/agent.py))
+#### Multi-Agent Hierarchy ([`agent/agent.py`](../agent/agent.py))
+```mermaid
+flowchart TD
+    Root["root_agent: market_castro_grant_advisor<br/>(Coordinator & Conversational Router)"]
+    SA1["Sub-Agent 1: graph_cascade_analyst<br/>Tools: discover_cascade_candidates,<br/>simulate_anchor_closure, BigQuery MCP"]
+    SA2["Sub-Agent 2: equity_bias_auditor<br/>Tools: audit_corridor_equity_and_bias,<br/>add_verified_merchant_supplier (+10 Bonus)"]
+    SA3["Sub-Agent 3: grant_portfolio_defender<br/>Tools: generate_friday_grant_memo,<br/>compare_grant_candidates, optimize_corridor_portfolio"]
+    Root --> SA1
+    Root --> SA2
+    Root --> SA3
+```
+
 - **`root_agent` (`market_castro_grant_advisor`)**: Coordinator orchestrating:
   1. **`graph_cascade_analyst`**: Executes GQL traversals, `ANY SHORTEST` + `TO_JSON(p)` path extraction, Keystone Band discovery (`discover_cascade_candidates`), Track 3 two-direction anchor shock (`simulate_anchor_closure`), and BigQuery MCP queries.
   2. **`equity_bias_auditor`**: Audits virtual mailbox traps (`2261 Market St`), NAICS monopoly artifacts (`Primo`), duplicate DBAs, ACS 11-char tract context (`audit_corridor_equity_and_bias`), and live merchant supplier verification (`add_verified_merchant_supplier`).
   3. **`grant_portfolio_defender`**: Generates the 7-Part Friday Committee Defense Memo (`generate_friday_grant_memo`), head-to-head comparisons (`compare_grant_candidates`), and Subgraph-Deduplicated Multi-Business Portfolio Optimization (`optimize_corridor_portfolio`).
 
-#### Backend REST API Contract ([`agent/server.py`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/server.py))
-- `GET /api/overview` — Full initial state (`summary`, `discovery`, `default_memo`, `default_portfolio`, `employer_blocks`, `audit_highlights`)
+#### Backend REST API Contract ([`agent/server.py`](../agent/server.py))
+- `GET /api/overview` — Full initial state (`summary`, `system_status`, `discovery`, `default_memo`, `default_portfolio`, `employer_blocks`, `audit_highlights`)
+- `GET /api/workflow` & `POST /api/workflow` — Executes all 3 specialist sub-agents sequentially (`graph_cascade_analyst` -> `equity_bias_auditor` -> `grant_portfolio_defender`) and returns full `EndToEndWorkflowResult` + per-agent `SubAgentStepTrace` telemetry
+- `GET /api/hierarchy` — Returns the ADK Multi-Agent Hierarchy manifest and live agent initialization status
+- `GET /api/mcp-status` — Returns Managed BigQuery MCP (`https://bigquery.googleapis.com/mcp`) and `agent/tools.yaml` readiness status
 - `GET /api/memo` — 7-Part Friday Grant Memo + `to_json_paths` + `cascade_nodes` + `tract_context`
 - `GET /api/portfolio` — Subgraph-deduplicated portfolio (`1..4` grantees, `$50k–$100k` pool, `$15k` minimum grant guardrail)
 - `GET /api/candidates` — Ranked Keystone Band candidates + disqualified centrality traps
@@ -88,11 +106,12 @@ sequenceDiagram
 - `GET /api/anchor-shock` — Track 3 two-direction `DrawsFootfall` + `Supplies` shock simulation
 - `GET /api/equity-audit` — Full BEA bias, virtual mailbox, duplicate DBA, ACS 11-char tract, and SBA charge-off report
 - `POST /api/merchant-intake` — `+10 Bonus` live edge verification & BigQuery `MERGE` DML generation
-- `POST /api/chat` — Multi-agent conversational router
+- `POST /api/reload` — Zero-downtime hot-reload of Member 1's `data/market_castro_graph.json`
+- `POST /api/chat` — Multi-agent conversational router with explicit `sub_agent_routed` attribution
 
 ---
 
-### 3.3 Member 3: UI Wireframes & Interactive Component Specification ([`agent/static/index.html`](file:///Users/subbavanipenta/Desktop/GCP%20Agents/agent/static/index.html))
+### 3.3 Member 3: UI Wireframes & Interactive Component Specification ([`agent/static/index.html`](../agent/static/index.html))
 
 #### Tab 1: 7-Part Friday Defense Memo, SVG `TO_JSON(p)` Cascade Graph & Portfolio Optimizer
 ```text

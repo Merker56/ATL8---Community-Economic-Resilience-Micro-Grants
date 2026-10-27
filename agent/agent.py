@@ -15,8 +15,14 @@ import time
 import uuid
 from typing import Any
 
-from .mcp_config import build_bigquery_mcp_toolset
-from .prompts import ROOT_AGENT_INSTRUCTION
+from .mcp_config import build_bigquery_mcp_toolset, get_mcp_and_bigquery_status
+from .prompts import (
+    EQUITY_BIAS_AUDITOR_INSTRUCTION,
+    GRANT_PORTFOLIO_DEFENDER_INSTRUCTION,
+    GRAPH_CASCADE_ANALYST_INSTRUCTION,
+    ROOT_AGENT_INSTRUCTION,
+    SUB_AGENT_HIERARCHY_MANIFEST,
+)
 from .schemas import EndToEndWorkflowResult, SubAgentStepTrace
 from .tools import (
     add_verified_merchant_supplier,
@@ -65,11 +71,7 @@ try:
             "ANY SHORTEST + TO_JSON(p) path extraction, Keystone Band (5-28 reach) discovery, "
             "and Track 3 two-direction anchor closure simulations."
         ),
-        instruction=(
-            "You are the Graph Cascade & Anchor Shock Specialist. Execute GQL traversals "
-            "on a4i_econ.LocalEconomy, extract TO_JSON(p) paths, and simulate 2-direction "
-            "DrawsFootfall and Supplies shocks."
-        ),
+        instruction=GRAPH_CASCADE_ANALYST_INSTRUCTION,
         tools=graph_cascade_tools,
     )
 
@@ -82,10 +84,7 @@ try:
             "hub traps (2261 Market St / 584 Castro St), duplicate DBAs, LPAD 11-char ACS Census "
             "Tract equity metrics, SBA 7(a) charge-offs, and merchant-verified supplier intake."
         ),
-        instruction=(
-            "You are the Equity & Data Hygiene Auditor. Flag virtual mailbox hubs, single-supplier "
-            "NAICS monopoly artifacts, and duplicate tax filings, and ingest verified merchant supplier invoices."
-        ),
+        instruction=EQUITY_BIAS_AUDITOR_INSTRUCTION,
         tools=[
             audit_corridor_equity_and_bias,
             add_verified_merchant_supplier,
@@ -101,11 +100,7 @@ try:
             "head-to-head runner-up comparisons, and Subgraph-Deduplicated Multi-Business Portfolio "
             "Optimization with a $15,000 minimum effective survival grant guardrail."
         ),
-        instruction=(
-            "You are the Friday Grant Committee Defense Specialist. Construct rigorous 7-part "
-            "grant memos, compare candidates head-to-head, and optimize 1-to-N business grant portfolios "
-            "without subgraph overlap or survival runway dilution."
-        ),
+        instruction=GRANT_PORTFOLIO_DEFENDER_INSTRUCTION,
         tools=[
             generate_friday_grant_memo,
             compare_grant_candidates,
@@ -135,6 +130,16 @@ except ImportError:
     equity_bias_auditor_agent = None
     grant_portfolio_defense_agent = None
     root_agent = None
+
+
+def get_multi_agent_hierarchy() -> dict[str, Any]:
+    """Return the structured Multi-Agent Hierarchy manifest and live ADK initialization state."""
+    return {
+        **SUB_AGENT_HIERARCHY_MANIFEST,
+        "adk_agents_initialized": root_agent is not None,
+        "adk_model": os.environ.get("ADK_MODEL", "gemini-2.5-pro"),
+        "mcp_status": get_mcp_and_bigquery_status(),
+    }
 
 
 def run_end_to_end_workflow(
@@ -327,6 +332,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for t in res["sub_agent_traces"]
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "market_castro_grant_advisor",
             "tool_called": "run_end_to_end_workflow",
             "reply": (
                 f"### End-to-End 3-Sub-Agent Workflow Executed (`{res['workflow_id']}`, `{res['total_execution_ms']}ms`)\n"
@@ -338,6 +345,22 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             "data": res,
         }
 
+    # 0b. Judge Trap / Intellectual Honesty Refusal (Unknowable Private Rent, Lease, or Exact Employee Headcount)
+    if any(k in low for k in ("exact monthly rent", "lease expiration", "exact w-2", "individual employee headcount", "private invoice")):
+        audit = audit_corridor_equity_and_bias()
+        return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
+            "tool_called": "audit_corridor_equity_and_bias",
+            "reply": (
+                "### Intellectual Honesty Refusal — Unknowable Private Storefront Data\n"
+                "- **What We Refuse to Fabricate:** Public government datasets do **NOT** contain individual business monthly rent, commercial lease expiration dates, private vendor invoices (unless uploaded via our `+10 Bonus Merchant Supplier Intake`), or per-storefront W-2 headcount.\n"
+                "- **Why:** Census LODES (`wac`) reports jobs only at the **aggregate Census Block (`block_id`)** level, and SF Open Data (`g8m3-pdis`) reports business locations and NAICS codes without private balance-sheet data.\n"
+                "- **What We Use Instead:** Measured Census Block LODES employment (`employer_blocks`), 11-character ACS Census Tract vulnerability (`tract_demographics`), historical SBA 7(a) loan approvals/charge-offs (`borrowed_from`), and BEA Make-Use industry purchase coefficients (`Supplies`)."
+            ),
+            "data": audit,
+        }
+
     # 1. Merchant supplier intake intent (+10 Bonus)
     if any(k in low for k in ("verify", "intake", "invoice", "add supplier", "supplies to", "buys from")):
         res = add_verified_merchant_supplier(
@@ -347,9 +370,11 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             invoice_note=f"Live Grant Officer intake: {msg}",
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
             "tool_called": "add_verified_merchant_supplier",
             "reply": (
-                f"**Verified Merchant Supplier Edge Recorded (+10 Bonus Unlock):**\n"
+                f"**Verified Merchant Supplier Edge Recorded (+10 Bonus Unlock — Routed to `equity_bias_auditor`):**\n"
                 f"- **Supplier:** `{res['supplier']['name']}` ({res['supplier']['address']})\n"
                 f"- **Buyer:** `{res['buyer']['name']}` ({res['buyer']['address']})\n"
                 f"- **Action:** {res['action']}\n"
@@ -375,12 +400,41 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for u in top_up
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "graph_cascade_analyst",
             "tool_called": "simulate_anchor_closure",
             "reply": (
-                f"### Track 3 Two-Direction Anchor Shock Simulation\n"
+                f"### Track 3 Two-Direction Anchor Shock Simulation (Routed to `graph_cascade_analyst`)\n"
                 f"**Anchor Block:** `{blk['block_geoid']}` (`{blk['total_jobs']}` LODES jobs, Tract `{blk['tract_geoid']}`)\n\n"
                 f"**1. Direct Footfall-Dependent Storefronts Hurt (`<-[df:DrawsFootfall]-`):**\n{sf_lines}\n\n"
                 f"**2. Upstream Corridor Suppliers Hurt (`<-[s:Supplies]-`):**\n{up_lines}"
+            ),
+            "data": res,
+        }
+
+    # 2b. Keystone Band Discovery intent
+    if any(k in low for k in ("discover", "keystone band", "candidates", "5 to 28", "rank all", "top candidates")):
+        res = discover_cascade_candidates(
+            exclude_virtual_mailboxes=True,
+            exclude_monopoly_artifacts=True,
+            min_reach=3,
+            max_reach=35,
+            top_k=10,
+        )
+        top_lines = "\n".join(
+            f"  - **{c['name']}** (`{c['business_id']}`, {c['address']}, NAICS `{c['naics4']}`): "
+            f"`{c['direct_1hop_count']}` direct + `{c['indirect_2hop_count']}` indirect (`{c['total_2hop_exposed_count']}` total 2-hop, "
+            f"1-hop intensity `{c['total_1hop_intensity']}`, keystone score `{c['actionable_keystone_score']}`)"
+            for c in res["actionable_keystone_candidates"][:5]
+        )
+        return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "graph_cascade_analyst",
+            "tool_called": "discover_cascade_candidates",
+            "reply": (
+                f"### Actionable Keystone Band Discovery (Routed to `graph_cascade_analyst`)\n"
+                f"Filtered out `{len(res['disqualified_naive_centrality_traps'])}` virtual-mailbox / single-supplier monopoly traps:\n"
+                f"{top_lines}"
             ),
             "data": res,
         }
@@ -389,13 +443,15 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
     if any(k in low for k in ("bias", "equity", "mailbox", "2261", "duplicate", "sba", "charge", "artifact", "primo")):
         res = audit_corridor_equity_and_bias()
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
             "tool_called": "audit_corridor_equity_and_bias",
             "reply": (
-                "### Market/Castro Structural Bias & Data Hygiene Audit\n"
+                "### Market/Castro Structural Bias & Data Hygiene Audit (Routed to `equity_bias_auditor`)\n"
                 "1. **Virtual Mailbox Hub Trap (`2261 Market St` & `584 Castro St`):** `140` active filings share `2261 Market St` and `21` share `584 Castro St` using bare 4-digit PMB numbers (`2261 Market Street 4303`) that evade standard `apt|ste|unit|#` regexes. Our agent flags and disqualifies these from storefront micro-grants.\n"
                 "2. **Single-Supplier Monopoly Trap (`Primo`, `1278368-05-211` at `4201 18th St`):** Appears to have `76` direct buyers (`95` two-hop reach) solely because it is the only NAICS `3121` (Beverage Manufacturing) business in the corridor.\n"
                 "3. **Duplicate Tax Filings Resolved:** `The Castro` (`429` & `449 Castro St`), `Mudpuppy's Tub & Scrub` (`536` & `538 Castro St`), `Midnight Sun` (`4067 18th St`), `The Edge` (`4149 18th St`), and `Beck's Motor Lodge` (`2222 Market St`).\n"
-                "4. **SBA 7(a) Ground Truth:** `9` historical SBA loans (`$1.37M`), including `2` verified charge-offs (`Castro Tarts Cafe And Bakery` at `564 Castro St` and `Jake's Castro Kitchen` at `2348 Market St`)."
+                "4. **SBA 7(a) Ground Truth:** `9` historical SBA loans (`$753,500`), including `2` verified charge-offs (`Castro Tarts Cafe And Bakery` at `564 Castro St` and `Bay Cleaners 2` at `2330 Market St`)."
             ),
             "data": res,
         }
@@ -410,9 +466,11 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for s in res["selected_portfolio"]
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "grant_portfolio_defender",
             "tool_called": "optimize_corridor_portfolio",
             "reply": (
-                f"### Subgraph-Deduplicated Grant Portfolio (`K={k_req}`, Pool `${res['budget_pool_usd']:,.0f}`)\n"
+                f"### Subgraph-Deduplicated Grant Portfolio (`K={k_req}`, Pool `${res['budget_pool_usd']:,.0f}` — Routed to `grant_portfolio_defender`)\n"
                 f"{lines}\n\n"
                 f"- **Total Unique Physical Storefronts Protected:** `{res['total_unique_physical_storefronts_protected']}` (`{res['total_unique_2hop_nodes_protected']}` total 2-hop nodes)\n"
                 f"- **Committee Guidance:** {res['committee_guidance']}"
@@ -426,9 +484,11 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
         res = compare_grant_candidates("Theatre Rhinoceros", cand_b)
         ca, cb = res["candidate_a"], res["candidate_b"]
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "grant_portfolio_defender",
             "tool_called": "compare_grant_candidates",
             "reply": (
-                f"### Head-to-Head Committee Comparison: `{ca['name']}` vs. `{cb['name']}`\n"
+                f"### Head-to-Head Committee Comparison: `{ca['name']}` vs. `{cb['name']}` (Routed to `grant_portfolio_defender`)\n"
                 f"- **`{ca['name']}` ({ca['address']}):** `{ca['direct_1hop_count']}` direct buyers, `{ca['total_2hop_exposed_count']}` two-hop reach, "
                 f"1-hop intensity `{ca['total_1hop_intensity']}`, expected jobs saved `{ca['expected_jobs_saved']}` (`${ca['cost_per_expected_job_usd']:,.0f}`/job).\n"
                 f"- **`{cb['name']}` ({cb['address']}):** `{cb['direct_1hop_count']}` direct buyers, `{cb['total_2hop_exposed_count']}` two-hop reach, "
@@ -439,7 +499,7 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             "data": res,
         }
 
-    # 5. Default: Full 7-Part Friday Grant Memo
+    # 6. Default: Full 7-Part Friday Grant Memo
     target = "Theatre Rhinoceros"
     for candidate_name in ("Cafe Du Nord", "Canela", "Leadbetters", "Castro Tarts", "Primo"):
         if candidate_name.lower() in low:
@@ -447,9 +507,11 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             break
     memo = generate_friday_grant_memo(business_query=target)
     return {
+        "root_orchestrator": "market_castro_grant_advisor",
+        "sub_agent_routed": "grant_portfolio_defender",
         "tool_called": "generate_friday_grant_memo",
         "reply": (
-            f"### 7-Part Friday Grant Committee Memo — `{memo['recommended_business_name']}` ({memo['recommended_address']})\n"
+            f"### 7-Part Friday Grant Committee Memo — `{memo['recommended_business_name']}` ({memo['recommended_address']}) [Routed to `grant_portfolio_defender`]\n"
             f"1. **Recommendation:** Deploy **${memo['grant_amount_usd']:,.0f}** to **{memo['recommended_business_name']}** (`{memo['recommended_business_id']}`, NAICS `{memo['recommended_naics4']}` {memo['recommended_naics_label']}). {memo['allocation_split_note']}\n"
             f"2. **What It Protects:** `{memo['direct_1hop_count']}` direct 1-hop buyers and `{memo['indirect_2hop_count']}` indirect 2-hop buyers (`{memo['total_2hop_exposed_count']}` total exposed, 1-hop intensity `{memo['total_1hop_intensity']}`), protecting `{memo['estimated_downstream_jobs_protected']}` estimated corridor jobs (`{memo['expected_jobs_saved_delta']}` expected jobs saved at `${memo['cost_per_expected_job_saved_usd']:,.0f}`/job).\n"
             f"3. **Traversal Shown:** Executed BigQuery `ANY SHORTEST` GQL query with `TO_JSON(p)` path extraction across `{len(memo['to_json_paths'])}` shortest paths.\n"

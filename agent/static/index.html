@@ -3,1185 +3,1230 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SF OEWD Grant Officer Decision Console — ATL8 (ADK + BigQuery Graph)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>A4I 2026 | Market/Castro Micro-Grant Committee Defense Console</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,400&display=swap');
-
+    :root {
+      --bg: #0b1020;
+      --panel: #121a30;
+      --panel-alt: #18223f;
+      --border: #26355e;
+      --text: #eef2ff;
+      --muted: #9fb0d9;
+      --accent: #38bdf8;
+      --accent-2: #f59e0b;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --violet: #a78bfa;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #0b1120;
-      color: #e2e8f0;
+      margin: 0;
+      background: radial-gradient(circle at top right, #172554 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.48;
     }
-    .font-mono-code {
-      font-family: 'JetBrains Mono', monospace;
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 16, 32, 0.92);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: 14px 24px;
     }
-    .font-memo {
-      font-family: 'Newsreader', Georgia, serif;
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
     }
-    .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+    .badge-pill {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 5px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
     }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: rgba(71, 85, 105, 0.7);
-      border-radius: 3px;
+    .brand h1 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
-    .node-pulse {
-      animation: pulseRing 2.4s infinite ease-in-out;
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
     }
-    @keyframes pulseRing {
-      0%, 100% { filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.75)); }
-      50% { filter: drop-shadow(0 0 14px rgba(96, 165, 250, 0.95)); }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
     }
-    @media print {
-      body {
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
-      .no-print {
-        display: none !important;
-      }
-      #memo-print-container {
-        width: 100% !important;
-        max-height: none !important;
-        overflow: visible !important;
-        box-shadow: none !important;
-        border: none !important;
-      }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
     }
+    .kpi-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-val {
+      font-size: 17px;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--accent);
+      font-family: var(--mono);
+    }
+    .container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 18px 24px 48px;
+    }
+    .controls-bar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+    .ctrl-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .ctrl-group select,
+    .ctrl-group input[type="text"],
+    .ctrl-group input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    .ctrl-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0284c7, #1d4ed8);
+      color: #fff;
+      border-color: #38bdf8;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 1100px) {
+      .split-grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .part-grid {
+      display: grid;
+      gap: 11px;
+    }
+    .memo-part {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 13px;
+    }
+    .memo-part.warn { border-left-color: var(--accent-2); }
+    .memo-part.good { border-left-color: var(--emerald); }
+    .memo-part.purple { border-left-color: var(--violet); }
+    .part-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .memo-part.warn .part-title { color: var(--accent-2); }
+    .memo-part.good .part-title { color: var(--emerald); }
+    .memo-part.purple .part-title { color: var(--violet); }
+    .part-body {
+      font-size: 13.2px;
+      color: var(--text);
+    }
+    .graph-canvas-wrap {
+      background: #070b17;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      height: 430px;
+    }
+    svg#cascadeSvg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .graph-legend {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      background: rgba(18, 26, 48, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 9px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+    }
+    tr:hover td {
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .code-box {
+      background: #070b16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 13px;
+      font-family: var(--mono);
+      font-size: 11.8px;
+      color: #bae6fd;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 240px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+    .tag-hop1 { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .tag-hop2 { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .tag-trap { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .tag-verified { background: rgba(245, 158, 11, 0.22); color: #fbbf24; }
+    .btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chat-log {
+      background: #070b16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      height: 270px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    .chat-msg { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #1e293b; }
+    .chat-msg b { color: var(--accent); }
   </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
-
-  <!-- TOP HEADER & CLOUD RUN TELEMETRY BAR -->
-  <header class="no-print border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-30 px-5 py-3">
-    <div class="max-w-[1680px] mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-900/40 border border-blue-400/30 font-bold text-white text-sm">
-          ATL8
-        </div>
+<body>
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <span class="badge-pill">A4I 2026 · Challenge 03</span>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold tracking-tight text-white">SF OEWD Micro-Grant Resilience Console</h1>
-            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-              ADK + BigQuery Property Graph (GQL)
-            </span>
-          </div>
-          <p class="text-xs text-slate-400">
-            Challenge 3: Multi-Hop Downstream Cascade Protection &amp; Defensible Friday Grant Memo
-          </p>
+          <h1>Market / Castro Economic Resilience & Micro-Grant Defense Console</h1>
+          <p>BigQuery Property Graph (GQL) · `a4i_econ.LocalEconomy` · San Francisco Commercial Corridor</p>
         </div>
       </div>
-
-      <!-- Cloud Run & BigQuery Live Badges -->
-      <div class="flex flex-wrap items-center gap-2 text-xs">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-700/50 text-emerald-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span class="font-mono-code font-medium">Cloud Run: us-east1</span>
-          <span class="text-emerald-400/80">|</span>
-          <span class="font-mono-code text-[11px]">--min-instances=1 (Warm)</span>
-        </div>
-        <div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 font-mono-code text-[11px]">
-          <span>Project: qwiklabs-gcp-03-46ba9aeed89b</span>
-          <span class="text-slate-600">•</span>
-          <span>Graph: a4i_econ.LocalEconomy</span>
-        </div>
-        <button onclick="openIntakeModal()" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-medium transition flex items-center gap-1.5">
-          <span>+ Business Owner Intake Edge</span>
-        </button>
-        <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow transition">
-          Print / PDF Friday Memo
-        </button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <button class="btn" onclick="openAndRunWorkflowTab()">⚡ Run 3-Sub-Agent E2E Workflow</button>
+        <a href="/multi-corridor" class="btn-secondary" style="text-decoration:none; display:inline-block;">🌐 10-Corridor & 30-Check QA Suite</a>
+        <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Meeting Preset ($25k + $25k Split)</button>
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Filtered Storefronts</div>
+        <div class="kpi-val" id="kpiStorefronts">327 <span style="font-size:11px;color:var(--muted)">/ 1,566 raw</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">BEA Supplies Edges</div>
+        <div class="kpi-val" id="kpiSupplies">1,199</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">LODES Footfall Edges</div>
+        <div class="kpi-val" id="kpiFootfall">677 <span style="font-size:11px;color:var(--muted)">(10 blocks)</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SBA 7(a) Ground Truth</div>
+        <div class="kpi-val" id="kpiSba">9 Loans <span style="font-size:11px;color:var(--rose)">(2 ChgOff)</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Expected Jobs Saved (ΔP)</div>
+        <div class="kpi-val" id="kpiExpectedJobs" style="color:var(--emerald)">--</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Grant Cost / Expected Job</div>
+        <div class="kpi-val" id="kpiCostPerJob" style="color:var(--accent-2)">--</div>
       </div>
     </div>
   </header>
 
-  <!-- CORRIDOR, BUDGET, TRACK & STRATEGY SELECTOR BAR -->
-  <section class="no-print bg-slate-900/95 border-b border-slate-800 px-5 py-3">
-    <div class="max-w-[1680px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-
-      <!-- 1. Corridor Selector -->
-      <div>
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-          1. SF Commercial Corridor (10 Snapshot Corridors)
-        </label>
-        <select id="corridor-select" onchange="refreshAnalysis()" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-white font-medium outline-none">
-          <option value="Central Market" selected>Central Market (Default — 230 Biz | 86 2-Hop | 22% Pov)</option>
-          <option value="Chinatown">Chinatown (413 Biz | 37 2-Hop | 9 Tracts)</option>
-          <option value="Market/Castro">Market/Castro (314 Biz | 57 2-Hop | 8 Tracts)</option>
-          <option value="Mission Street">Mission Street (174 Biz | 35 2-Hop | 20 Tracts)</option>
-          <option value="Union Street">Union Street (153 Biz | 41 2-Hop | 5 Tracts)</option>
-          <option value="North Beach">North Beach (148 Biz | 18 2-Hop | 13% Pov)</option>
-          <option value="Parkside Taraval">Parkside Taraval (109 Biz | 19 2-Hop | 4 Tracts)</option>
-          <option value="24th St">24th St (98 Biz | 22 2-Hop | 5 Tracts)</option>
-          <option value="Geary Boulevard">Geary Boulevard (92 Biz | 17 2-Hop | 5 Tracts)</option>
-          <option value="West Portal">West Portal (90 Biz | 14 2-Hop | ⚠️ 1 Tract)</option>
+  <div class="container">
+    <!-- Interactive Parameter Controls -->
+    <div class="controls-bar">
+      <div class="ctrl-group">
+        <label><span>Primary Focal Business</span><span id="focalIdBadge" style="font-family:var(--mono)"></span></label>
+        <select id="selPrimary" onchange="refreshMemo()">
+          <option value="Theatre Rhinoceros">Theatre Rhinoceros (4229 18th St · NAICS 7111)</option>
+          <option value="Cafe Du Nord">Cafe Du Nord (2174 Market St E · NAICS 7113)</option>
+          <option value="Canela">Canela Bistro & Wine Bar (2272 Market St · NAICS 7225)</option>
+          <option value="Leadbetters Bake Shop">Leadbetters Bake Shop (554 Castro St · NAICS 7225)</option>
+          <option value="Castro Tarts Cafe And Bakery">Castro Tarts Cafe & Bakery (564 Castro St · SBA Charge-Off)</option>
+          <option value="Primo">[Artifact] Primo (4201 18th St · Sole NAICS 3121 Monopoly)</option>
         </select>
       </div>
-
-      <!-- 2. Emergency Relief Budget Selector -->
-      <div>
-        <div class="flex justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-          <span>2. Relief Fund Budget</span>
-          <span id="budget-display" class="text-emerald-400 font-mono-code font-bold">$50,000</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <input id="budget-slider" type="range" min="15000" max="150000" step="5000" value="50000"
-                 oninput="document.getElementById('budget-display').textContent = '$' + Number(this.value).toLocaleString()"
-                 onchange="refreshAnalysis()"
-                 class="w-full accent-blue-500 cursor-pointer" />
-          <div class="flex gap-1">
-            <button onclick="setBudget(25000)" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300">$25k</button>
-            <button onclick="setBudget(50000)" class="px-2 py-1 text-[11px] rounded bg-blue-900/60 border border-blue-500/40 text-blue-200">$50k</button>
-            <button onclick="setBudget(100000)" class="px-2 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300">$100k</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Budget Allocation Strategy -->
-      <div>
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-          3. Budget Split Strategy (Co-Failure Defense)
-        </label>
-        <select id="split-select" onchange="refreshAnalysis()" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-white font-medium outline-none">
-          <option value="split_two" selected>Split Portfolio: 2 Grants (64% Primary / 36% Co-Failure Shield)</option>
-          <option value="single_grant">Single Anchor Grant: 100% to Top Upstream Node</option>
-          <option value="split_three">Micro-Resilience Pool: 3 Grants (50% / 30% / 20%)</option>
+      <div class="ctrl-group">
+        <label><span>Runner-Up Comparator</span></label>
+        <select id="selRunnerUp" onchange="refreshMemo()">
+          <option value="Cafe Du Nord">Cafe Du Nord (2174 Market St E · 28 2-Hop Reach)</option>
+          <option value="Canela">Canela (2272 Market St · 9 Direct Buyers)</option>
+          <option value="Leadbetters Bake Shop">Leadbetters Bake Shop (554 Castro St · 500-Block Anchor)</option>
+          <option value="Theatre Rhinoceros">Theatre Rhinoceros (4229 18th St · Cultural Keystone)</option>
         </select>
       </div>
-
-      <!-- 4. Challenge Track Selector -->
-      <div>
-        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-          4. Graph Traversal Track
-        </label>
-        <select id="track-select" onchange="refreshAnalysis()" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-white font-medium outline-none">
-          <option value="main_street" selected>🏢 Main Street Relief (Forward -[:Supplies]-&gt;{1,2})</option>
-          <option value="micro_producer">🌾 Micro-Producer Discovery (FILTER 5 &lt;= 2hop &lt;= 25)</option>
-          <option value="anchor_closure">🏭 Anchor Closure (DrawsFootfall -&gt; Backward &lt;-[:Supplies]-)</option>
-        </select>
+      <div class="ctrl-group">
+        <label><span>Micro-Grant Allocation</span><span id="lblGrantAmt">$25,000 / $50,000 Pool</span></label>
+        <input type="range" id="rngGrant" min="10000" max="50000" step="2500" value="25000" oninput="refreshMemo()" />
       </div>
-
-      <!-- 5. Corridor Snapshot KPI Pill -->
-      <div class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-400">2-Hop Suppliers / Total</div>
-          <div id="corridor-depth-kpi" class="text-sm font-bold text-blue-400 font-mono-code">86 / 230 (37.4%)</div>
-        </div>
-        <div class="text-right">
-          <div class="text-[10px] uppercase tracking-wider text-slate-400">Tract Poverty</div>
-          <div id="corridor-poverty-kpi" class="text-sm font-bold text-amber-400 font-mono-code">22.0% (7 tracts)</div>
-        </div>
+      <div class="ctrl-group">
+        <label><span>P(fail | No Grant)</span><span id="lblPFailNo">65%</span></label>
+        <input type="range" id="rngPFailNo" min="0.20" max="0.95" step="0.05" value="0.65" oninput="refreshMemo()" />
       </div>
-
+      <div class="ctrl-group">
+        <label><span>P(fail | With Grant)</span><span id="lblPFailYes">15%</span></label>
+        <input type="range" id="rngPFailYes" min="0.05" max="0.50" step="0.05" value="0.15" oninput="refreshMemo()" />
+      </div>
+      <div class="ctrl-group">
+        <label><span>Substitutability Discount</span><span id="lblSubDisc">20%</span></label>
+        <input type="range" id="rngSubDisc" min="0.00" max="0.70" step="0.05" value="0.20" oninput="refreshMemo()" />
+      </div>
     </div>
-  </section>
 
-  <!-- MAIN 12-COLUMN WORKSPACE -->
-  <main class="flex-1 max-w-[1680px] w-full mx-auto px-5 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tabMemo', this)">1. 7-Part Friday Defense Memo & Cascade Graph</button>
+      <button class="tab-btn" onclick="switchTab('tabHygiene', this)">2. Why Not Naive Centrality? (Bias, Virtual Mailboxes & Equity Audit)</button>
+      <button class="tab-btn" onclick="switchTab('tabAnchor', this)">3. Track 3: Two-Direction Anchor Closure Simulator</button>
+      <button class="tab-btn" onclick="switchTab('tabBonus', this)">4. +10 Bonus: Live Merchant Supplier Intake & ADK Agent Q&A</button>
+      <button class="tab-btn" id="btnTabWorkflow" onclick="switchTab('tabWorkflow', this)">5. Member 2: ADK Multi-Agent Hierarchy, MCP & E2E Workflow</button>
+    </div>
 
-    <!-- LEFT 7 COLUMNS: 2-HOP CASCADE GRAPH VISUAL + APPLICANT QUEUE + GQL -->
-    <div class="no-print lg:col-span-7 flex flex-col gap-4">
-
-      <!-- 2-HOP CASCADE GRAPH CARD -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col">
-        <div class="px-4 py-3 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-sm font-bold text-white uppercase tracking-wider">
-                2-Hop Downstream Cascade Graph Visual
-              </h2>
-              <span id="active-seed-badge" class="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold">
-                Seed: Merchant Roots &amp; Commissary LLC
-              </span>
+    <!-- TAB 1: 7-PART MEMO & CASCADE VISUALIZER -->
+    <div id="tabMemo" class="tab-pane active">
+      <div class="split-grid">
+        <!-- Left Column: The 7-Part Friday Committee Defense Memo -->
+        <div class="card">
+          <h2>
+            <span>Friday Grant Committee Defense Memo (All 7 Rubric Sections)</span>
+            <span class="tag tag-hop1" id="memoHeaderBadge">Keystone Band: 12 Exposed</span>
+          </h2>
+          <div class="part-grid">
+            <div class="memo-part good">
+              <div class="part-title">Part 1 · Which Business (By Name & Address) and How Much</div>
+              <div class="part-body" id="part1Body">Loading...</div>
             </div>
-            <p class="text-xs text-slate-400 mt-0.5">
-              Click any node to inspect its downstream exposure, BEA technical intensity, and real SBA 7(a) loan status.
-            </p>
-          </div>
-          <!-- Legend for Real vs Modeled Edges -->
-          <div class="flex flex-wrap items-center gap-3 text-[11px]">
-            <span class="flex items-center gap-1.5 text-blue-300">
-              <span class="w-3 h-3 rounded-full bg-blue-600 inline-block border border-white/50"></span> Hop 0 Seed
-            </span>
-            <span class="flex items-center gap-1.5 text-amber-300">
-              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Hop 1 Buyer
-            </span>
-            <span class="flex items-center gap-1.5 text-emerald-300">
-              <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Hop 2 Indirect
-            </span>
-            <span class="flex items-center gap-1.5 text-pink-300">
-              <span class="w-3 h-3 rounded-full bg-pink-600 inline-block"></span> Employer Block
-            </span>
-          </div>
-        </div>
-
-        <!-- SVG INTERACTIVE GRAPH CANVAS -->
-        <div class="relative w-full h-[430px] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 select-none overflow-hidden">
-          <svg id="cascade-svg" viewBox="0 0 920 430" class="w-full h-full"></svg>
-
-          <!-- Floating Provenance Pill inside Graph -->
-          <div class="absolute bottom-3 left-3 bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-2 text-[11px] text-slate-300 max-w-md backdrop-blur">
-            <div class="font-semibold text-white mb-0.5 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Why Judge Provenance Matters: Real vs. Modeled</span>
+            <div class="memo-part">
+              <div class="part-title">Part 2 · What It Protects (Concrete 1-to-2 Hop Cascade & Jobs)</div>
+              <div class="part-body" id="part2Body">Loading...</div>
             </div>
-            <div class="text-slate-400 leading-snug">
-              <strong class="text-emerald-300">REAL:</strong> Storefront nodes, SBA 7(a) loans &amp; charge-offs (<code class="text-rose-300">CHGOFF</code>), LEHD block jobs, ACS poverty.<br/>
-              <strong class="text-blue-300">MODELED:</strong> <code class="text-blue-200">Supplies</code> (BEA rate + &le;1200m walk) &amp; <code class="text-pink-200">DrawsFootfall</code> (&le;500m).
+            <div class="memo-part purple">
+              <div class="part-title">Part 3 · Graph Traversal Shown (`ANY SHORTEST` + `TO_JSON(p)`)</div>
+              <div class="part-body" id="part3Body">Loading...</div>
             </div>
-          </div>
-
-          <!-- Selected Node Inspector Overlay -->
-          <div id="node-inspector" class="absolute top-3 right-3 w-72 bg-slate-950/95 border border-slate-700 rounded-xl p-3 text-xs shadow-2xl backdrop-blur">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-2">
-              <span id="insp-hop-tag" class="px-2 py-0.5 rounded bg-blue-600/30 text-blue-300 font-semibold text-[10px] uppercase">Hop 0 • Primary Seed</span>
-              <span id="insp-naics" class="font-mono-code text-slate-400 text-[11px]">NAICS 3119</span>
+            <div class="memo-part warn">
+              <div class="part-title">Part 4 · Why This One — And NOT the Runner-Up or Raw Centrality Hub</div>
+              <div class="part-body" id="part4Body">Loading...</div>
             </div>
-            <div id="insp-name" class="font-bold text-white text-sm leading-tight">Merchant Roots &amp; Commissary LLC</div>
-            <div id="insp-address" class="text-slate-400 text-[11px] mt-0.5">1365 Market St</div>
-            <div class="grid grid-cols-2 gap-2 mt-2.5 pt-2 border-t border-slate-800/80">
-              <div>
-                <div class="text-[10px] text-slate-400">Distress Score</div>
-                <div id="insp-distress" class="font-mono-code font-bold text-amber-400">0.78 (High)</div>
-              </div>
-              <div>
-                <div class="text-[10px] text-slate-400">Linked Footfall</div>
-                <div id="insp-footfall" class="font-mono-code font-bold text-pink-400">1,149 workers</div>
-              </div>
+            <div class="memo-part good">
+              <div class="part-title">Part 5 · Explicit Assumptions (Survival Probability Shift ΔP, Not Certainty)</div>
+              <div class="part-body" id="part5Body">Loading...</div>
             </div>
-            <div id="insp-sba-box" class="mt-2 p-2 rounded bg-slate-900 border border-slate-800 text-[11px]">
-              <span class="text-emerald-400 font-semibold">REAL SBA 7(a):</span>
-              <span id="insp-sba-text" class="text-slate-300"> $85,000 • ACTIVE-FORBEARANCE</span>
+            <div class="memo-part warn">
+              <div class="part-title">Part 6 · Honest Line: Which Evidence Is REAL vs. MODELED</div>
+              <div class="part-body" id="part6Body">Loading...</div>
+            </div>
+            <div class="memo-part">
+              <div class="part-title">Part 7 · Who Lives Around It (ACS Census Tract `LPAD(geo_id, 11, '0')`)</div>
+              <div class="part-body" id="part7Body">Loading...</div>
             </div>
           </div>
         </div>
 
-        <!-- CANDIDATE QUEUE: WHY THIS ONE AND NOT THE HUB OR RUNNER-UP -->
-        <div class="p-4 border-t border-slate-800 bg-slate-900/60">
-          <div class="flex items-center justify-between mb-2.5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Corridor Candidate Queue — Click Any Applicant to Trace Its 2-Hop Cascade
-            </h3>
-            <span class="text-[11px] text-slate-400">
-              GQL Sweet-Spot Rule: <code class="text-blue-300 font-mono-code">FILTER exposed_2hop &gt;= 5 AND exposed_2hop &lt;= 25</code>
-            </span>
+        <!-- Right Column: Interactive SVG Graph + Cascade Table + GQL / TO_JSON(p) Inspector -->
+        <div>
+          <div class="card">
+            <h2>
+              <span>1-to-2 Hop Supply Cascade Topology (`TO_JSON(p)` Path Renderer)</span>
+              <button class="btn-secondary" onclick="toggleJsonModal()">Inspect `TO_JSON(p)` & GQL</button>
+            </h2>
+            <div class="graph-canvas-wrap">
+              <svg id="cascadeSvg" viewBox="0 0 680 420"></svg>
+              <div class="graph-legend">
+                <span><i class="dot" style="background:#f59e0b"></i>Focal Grant Recipient</span>
+                <span><i class="dot" style="background:#10b981"></i>Hop 1 Direct Buyer</span>
+                <span><i class="dot" style="background:#38bdf8"></i>Hop 2 Indirect Buyer</span>
+                <span><i class="dot" style="background:#f43f5e"></i>Virtual Mailbox / Flagged</span>
+              </div>
+            </div>
+            <div id="gqlInspectorWrap" style="display:none; margin-top:12px;">
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:4px;">BigQuery GQL Query Executed (`sql/02_gql_cascade_queries.sql`):</div>
+              <div class="code-box" id="gqlQueryBox"></div>
+              <div style="font-size:11.5px; color:var(--muted); margin:8px 0 4px;">Sample BigQuery `TO_JSON(p)` Path Object:</div>
+              <div class="code-box" id="toJsonBox"></div>
+            </div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
+
+          <div class="card">
+            <h2><span>Downstream Businesses Protected (Hop 1 & Hop 2 Cascade Paths)</span></h2>
+            <div style="max-height: 250px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hop</th>
+                    <th>Downstream Business</th>
+                    <th>Address</th>
+                    <th>Via (Hop 1)</th>
+                    <th>Compounded Intensity</th>
+                    <th>Dist</th>
+                  </tr>
+                </thead>
+                <tbody id="cascadeTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <span>Multi-Business Portfolio Optimizer (Subgraph Overlap Deduplication)</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <select id="selPortfolioK" onchange="loadPortfolio()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;">
+                  <option value="1">1 Grantee</option>
+                  <option value="2" selected>2 Grantees (Recommended $50k)</option>
+                  <option value="3">3 Grantees</option>
+                  <option value="4">4 Grantees</option>
+                </select>
+                <select id="selPortfolioPool" onchange="loadPortfolio()" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;">
+                  <option value="50000" selected>$50,000 Pool</option>
+                  <option value="75000">$75,000 Pool</option>
+                  <option value="100000">$100,000 Pool</option>
+                </select>
+              </div>
+            </h2>
+            <div id="portfolioGuidanceBox" style="font-size:12.2px; color:var(--muted); margin-bottom:8px;"></div>
+            <table>
               <thead>
-                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-                  <th class="py-2 px-2.5">Applicant Business</th>
-                  <th class="py-2 px-2">Role / Classification</th>
-                  <th class="py-2 px-2 text-right">1-Hop / 2-Hop</th>
-                  <th class="py-2 px-2 text-right">Mean BEA Intensity</th>
-                  <th class="py-2 px-2 text-right">Distress</th>
-                  <th class="py-2 px-2">SBA 7(a) Ground Truth</th>
-                  <th class="py-2 px-2 text-right">Action</th>
+                <tr>
+                  <th>Slot</th>
+                  <th>Selected Business (NAICS)</th>
+                  <th>Marginal Score</th>
+                  <th>New Physical Protected</th>
+                  <th>Overlap</th>
+                  <th>Dynamic Grant</th>
                 </tr>
               </thead>
-              <tbody id="candidates-tbody" class="divide-y divide-slate-800/60"></tbody>
+              <tbody id="portfolioTableBody"></tbody>
             </table>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- VERBATIM BIGQUERY GQL & EQUITY AUDIT TABS -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5 mb-3">
-          <div class="flex gap-2">
-            <button id="tab-btn-gql" onclick="switchSubTab('gql')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">
-              BigQuery GQL Traversal &amp; DDL
-            </button>
-            <button id="tab-btn-equity" onclick="switchSubTab('equity')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
-              3-Step Equity &amp; BEA Industry Bias Audit
-            </button>
-            <button id="tab-btn-paths" onclick="switchSubTab('paths')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
-              2-Hop Path Weight Table (Multiplicative vs Weakest-Link)
-            </button>
-            <button id="tab-btn-qa" onclick="switchSubTab('qa')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-emerald-300 hover:bg-slate-700 border border-emerald-500/30">
-              ✅ QA &amp; Validation (<span id="qa-pass-badge">30/30</span>)
-            </button>
-          </div>
-          <button onclick="copyGql()" class="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-code">
-            Copy GQL
-          </button>
-        </div>
-
-        <!-- Tab 1: Verbatim GQL -->
-        <div id="subtab-gql" class="space-y-3">
-          <div>
-            <div class="text-[11px] font-semibold text-blue-400 mb-1 uppercase tracking-wider">
-              Active Multi-Hop Traversal Query (BigQuery GQL)
-            </div>
-            <pre id="gql-code-block" class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-emerald-300 font-mono-code overflow-x-auto leading-relaxed"></pre>
-          </div>
-          <details class="group">
-            <summary class="text-xs text-slate-400 cursor-pointer hover:text-white font-medium">
-              Show Property Graph DDL (<code class="font-mono-code text-blue-300">CREATE OR REPLACE PROPERTY GRAPH a4i_econ.LocalEconomy</code> — Section 13 Compliant)
-            </summary>
-            <pre id="ddl-code-block" class="mt-2 p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 font-mono-code overflow-x-auto"></pre>
-          </details>
-        </div>
-
-        <!-- Tab 2: Equity & Structural Bias Audit -->
-        <div id="subtab-equity" class="hidden space-y-3 text-xs">
-          <div id="equity-warning-banner" class="hidden p-3 rounded-lg bg-rose-950/80 border border-rose-600/50 text-rose-200 font-medium"></div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div class="text-slate-400 text-[11px]">Step 1: BEA Mechanical Industry Bias</div>
-              <div class="text-base font-bold text-amber-400 mt-1">78% vs 29% Share</div>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">
-                Food Mfg &amp; Restaurants hold <strong>78%</strong> of 2-hop supply cascades despite being <strong>29%</strong> of storefronts. Personal care leaves (barbers/dry cleaners) get <strong>0%</strong> of BEA supply edges.
-              </p>
-            </div>
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div class="text-slate-400 text-[11px]">Step 2: ACS Census Tract Alignment</div>
-              <div id="eq-poverty-compare" class="text-base font-bold text-emerald-400 mt-1">24.2% vs 22.0% Avg</div>
-              <p id="eq-vehicle-compare" class="text-slate-400 text-[11px] mt-1 leading-relaxed">
-                Funded tracts have higher poverty and lower vehicle access than the corridor mean, confirming relief lands in high-need blocks.
-              </p>
-            </div>
-            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-              <div class="text-slate-400 text-[11px]">Step 3: Sole-Proprietor Privacy Filter</div>
-              <div id="eq-filter-compare" class="text-base font-bold text-blue-400 mt-1">80% Filtered Out</div>
-              <p class="text-slate-400 text-[11px] mt-1 leading-relaxed">
-                Removed non-corporate &amp; residential-address registrations before graph construction to protect home-based sole proprietors.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 3: 2-Hop Path Weight Table -->
-        <div id="subtab-paths" class="hidden overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
+    <!-- TAB 2: DATA HYGIENE, VIRTUAL MAILBOXES & EQUITY AUDIT -->
+    <div id="tabHygiene" class="tab-pane">
+      <div class="split-grid">
+        <div class="card">
+          <h2><span>Actionable Storefront Keystone Band (3–35 Reach) vs. Disqualified Centrality Traps</span></h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Section 11 & Section 13 Proof: Why our agent does NOT pick raw degree centrality winners (`Echo Chunk` at `2261 Market St` or `Primo` sole NAICS `3121`).
+          </p>
+          <h3 style="font-size:13px; color:var(--emerald);">A. Verified Brick-and-Mortar Keystone Band Candidates</h3>
+          <table>
             <thead>
-              <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-                <th class="py-1.5 px-2">Hop 0 Seed</th>
-                <th class="py-1.5 px-2">Hop 1 Direct Buyer (Intensity)</th>
-                <th class="py-1.5 px-2">Hop 2 Indirect Exposed (Intensity)</th>
-                <th class="py-1.5 px-2 text-right">Compounded (I₁×I₂)</th>
-                <th class="py-1.5 px-2 text-right">Weakest Link min(I₁,I₂)</th>
+              <tr>
+                <th>Business</th>
+                <th>Address</th>
+                <th>NAICS4</th>
+                <th>1-Hop</th>
+                <th>2-Hop Reach</th>
+                <th>1-Hop Intensity</th>
+                <th>Keystone Score</th>
               </tr>
             </thead>
-            <tbody id="paths-tbody" class="divide-y divide-slate-800/60 font-mono-code text-[11px]"></tbody>
+            <tbody id="keystoneTableBody"></tbody>
+          </table>
+
+          <h3 style="font-size:13px; color:var(--rose); margin-top:18px;">B. Disqualified Naive Centrality Traps (Filtered Out by Agent)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Flagged Entity</th>
+                <th>Address</th>
+                <th>Raw 2-Hop Reach</th>
+                <th>Disqualification Reason</th>
+              </tr>
+            </thead>
+            <tbody id="trapTableBody"></tbody>
           </table>
         </div>
 
-        <!-- Tab 4: 30-Point Section 12 Data, Graph & Agent Guardrail QA Validation -->
-        <div id="subtab-qa" class="hidden space-y-2.5">
-          <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-700/40 text-[11px] text-emerald-200 flex items-center justify-between">
-            <div>
-              <strong>Notebook Section 12 + GQL &amp; Guardrail QA Suite:</strong> Verifies unique graph element keys (preventing silent BigQuery path multiplication), referential integrity, 11-char FIPS <code>LPAD</code>, zero race inputs, and agent refusal guardrails.
-            </div>
-            <span id="qa-summary-pill" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono-code font-bold whitespace-nowrap ml-2">30 / 30 PASS</span>
-          </div>
-          <div class="max-h-64 overflow-y-auto custom-scroll border border-slate-800 rounded-lg">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead class="sticky top-0 bg-slate-950">
-                <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-                  <th class="py-1.5 px-2.5">Category</th>
-                  <th class="py-1.5 px-2">Validation Check</th>
-                  <th class="py-1.5 px-2 text-center">Status</th>
-                  <th class="py-1.5 px-2">Measured Detail</th>
-                  <th class="py-1.5 px-2">Why It Matters (Judge / Graph QA)</th>
+        <div>
+          <div class="card">
+            <h2><span>Census ACS 2022 Tract Vulnerability (`LPAD(geo_id, 11, '0')`)</span></h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tract GEOID (11-Char)</th>
+                  <th>Storefronts</th>
+                  <th>Median Income</th>
+                  <th>Poverty Rate</th>
+                  <th>No-Vehicle Rate</th>
+                  <th>Need Multiplier</th>
                 </tr>
               </thead>
-              <tbody id="qa-tbody" class="divide-y divide-slate-800/60 text-[11px]"></tbody>
+              <tbody id="tractTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <h2><span>Entity Resolution: Duplicate DBA Tax Registrations & SBA 7(a) Charge-Offs</span></h2>
+            <div id="hygieneDetailsBox" style="font-size:13px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TRACK 3 ANCHOR CLOSURE SIMULATOR -->
+    <div id="tabAnchor" class="tab-pane">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+          <div>
+            <h2 style="margin:0;">Track 3: Two-Direction Anchor Closure Shock (`DrawsFootfall` + `Supplies`)</h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">
+              Traverses `(anchor:EmployerBlock)&lt;-[df:DrawsFootfall]-(b1:Business)&lt;-[s:Supplies]-(upstream:Business)` to identify both direct foot-traffic losses and second-order supplier losses.
+            </p>
+          </div>
+          <div style="min-width:340px;">
+            <select id="selAnchorBlock" onchange="loadAnchorShock()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:9px; border-radius:6px;">
+              <option value="060750171011001">Block 060750171011001 (Castro & Market / 400-500 Castro Anchor · 785 Jobs)</option>
+              <option value="060750171011003">Block 060750171011003 (18th & Castro Cultural Strip · 512 Jobs)</option>
+              <option value="060750202011002">Block 060750202011002 (Church & Market / 2100 Market Hub · 690 Jobs)</option>
+              <option value="060750169001001">Block 060750169001001 (Upper Market 2200-2300 Strip · 642 Jobs)</option>
+            </select>
+          </div>
+        </div>
+        <div id="anchorNarrative" class="memo-part warn" style="margin-bottom:14px;"></div>
+        <div class="split-grid">
+          <div>
+            <h3 style="font-size:13.5px; color:var(--accent);">1. Direct Footfall-Dependent Storefronts Hurt (`&lt;-[df:DrawsFootfall]-`)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Storefront Business</th>
+                  <th>Address</th>
+                  <th>Sector</th>
+                  <th>Footfall Pull</th>
+                  <th>Distance</th>
+                </tr>
+              </thead>
+              <tbody id="anchorDirectBody"></tbody>
+            </table>
+          </div>
+          <div>
+            <h3 style="font-size:13.5px; color:var(--accent-2);">2. Upstream Corridor Suppliers Indirectly Hurt (`&lt;-[s:Supplies]-`)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Upstream Supplier</th>
+                  <th>Address</th>
+                  <th>Affected Buyers</th>
+                  <th>Joint Shock Score</th>
+                  <th>Storefront Buyers Hurt</th>
+                </tr>
+              </thead>
+              <tbody id="anchorUpstreamBody"></tbody>
             </table>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- RIGHT 5 COLUMNS: FORMATTED FRIDAY GRANT MEMO + ADK AGENT CHAT -->
-    <div class="lg:col-span-5 flex flex-col gap-4">
-
-      <!-- FORMATTED FRIDAY GRANT MEMO -->
-      <div id="memo-print-container" class="bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden flex flex-col">
-        <div class="no-print px-4 py-3 bg-gradient-to-r from-slate-950 via-blue-950/40 to-slate-950 border-b border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              Output Artifact
-            </span>
-            <h2 class="text-sm font-bold text-white">Formatted Friday Grant Memo</h2>
+    <!-- TAB 4: +10 BONUS MERCHANT SUPPLIER INTAKE & ADK CHAT -->
+    <div id="tabBonus" class="tab-pane">
+      <div class="split-grid">
+        <div class="card">
+          <h2>
+            <span>+10 Bonus Deliverable ("What's Next"): Live Merchant Supplier Intake</span>
+            <span class="tag tag-verified">REAL vs. MODELED Upgrade</span>
+          </h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Our Part 6 disclosure notes that `Supplies` edges are modeled from BEA Make-Use tables × distance decay.
+            When a merchant applies for a micro-grant and names their real local suppliers, this tool upgrades the edge to
+            <b>Merchant-Verified Ground Truth (`is_verified=true`)</b> and recomputes the corridor cascade live.
+          </p>
+          <div style="display:grid; gap:10px; margin-bottom:14px;">
+            <div class="ctrl-group">
+              <label><span>Upstream Local Supplier (Market/Castro)</span></label>
+              <input type="text" id="inpSupplier" value="Theatre Rhinoceros" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Downstream Local Buyer (Market/Castro)</span></label>
+              <input type="text" id="inpBuyer" value="The Castro" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Verified Dependency Intensity (0.05 – 0.85)</span></label>
+              <input type="number" id="inpShare" step="0.05" min="0.05" max="0.85" value="0.42" />
+            </div>
+            <div class="ctrl-group">
+              <label><span>Verification Source / Invoice Reference</span></label>
+              <input type="text" id="inpNote" value="Co-production & ticketing agreement verified during Friday intake" />
+            </div>
+            <button class="btn" onclick="submitVerifiedEdge()">Record Verified Edge & Recompute Graph Cascade</button>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="copyMemoMarkdown()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-medium transition">
-              Copy Markdown
-            </button>
+          <div id="intakeResultBox" style="display:none;">
+            <div class="memo-part good" id="intakeSummaryText" style="margin-bottom:10px;"></div>
+            <div style="font-size:11.5px; color:var(--muted); margin-bottom:4px;">Generated BigQuery `MERGE` DML Statement:</div>
+            <div class="code-box" id="intakeDmlBox"></div>
           </div>
         </div>
 
-        <!-- Official Memo Paper Body -->
-        <div id="memo-rendered" class="p-5 bg-[#fcfaf5] text-slate-900 max-h-[560px] overflow-y-auto custom-scroll space-y-4 text-xs leading-relaxed">
-          <!-- Dynamically populated by renderMemo() -->
+        <div class="card">
+          <h2><span>Interactive ADK Grant Defense Agent Q&A</span></h2>
+          <p style="font-size:13px; color:var(--muted); margin-top:0;">
+            Ask committee challenge questions (e.g., <i>"Compare Theatre Rhinoceros vs Canela"</i>, <i>"Why not fund Primo or Echo Chunk at 2261 Market St?"</i>, or <i>"Simulate Castro Station anchor closure"</i>).
+          </p>
+          <div class="chat-log" id="chatLog">
+            <div class="chat-msg">
+              <b>ADK Grant Defense Agent:</b> Ready for Friday Grant Committee questioning on the <code>market-castro</code> corridor. Try one of the quick committee prompts below or type your own question.
+            </div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <button class="btn-secondary" onclick="sendQuickChat('Run the end-to-end multi-agent workflow')">⚡ Run 3-Sub-Agent Workflow</button>
+            <button class="btn-secondary" onclick="sendQuickChat('Why should we fund Theatre Rhinoceros over Cafe Du Nord or Canela?')">Compare vs. Cafe Du Nord & Canela</button>
+            <button class="btn-secondary" onclick="sendQuickChat('Audit virtual mailbox bias at 2261 Market St and Primo monopoly')">Why Not Raw Centrality Winner?</button>
+            <button class="btn-secondary" onclick="sendQuickChat('What happens if the Castro Station employer block closes?')">Simulate Anchor Block Shock</button>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="chatInput" placeholder="Ask the Market/Castro ADK Agent..." style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:9px;" onkeydown="if(event.key==='Enter') sendChat()" />
+            <button class="btn" onclick="sendChat()">Ask Agent</button>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- INTERACTIVE ADK GRANT OFFICER CHAT -->
-      <div class="no-print bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col">
-        <div class="flex items-center justify-between mb-2">
+    <!-- TAB 5: MEMBER 2 ADK MULTI-AGENT HIERARCHY, MCP & E2E WORKFLOW -->
+    <div id="tabWorkflow" class="tab-pane">
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
-              <span>Ask the ADK Grant Officer Agent</span>
-              <span class="px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-300 font-mono-code">grant_officer_agent</span>
-            </h3>
-            <p class="text-[11px] text-slate-400">
-              Handles all 7 Grant Officer afternoon questions: traversal, runner-up defense, SBA fragility, assumptions, and equity.
+            <h2 style="margin:0;">Member 2: Google ADK Multi-Agent Hierarchy (`agent/agent.py`) & End-to-End Orchestration (`/api/workflow`)</h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">
+              Coordinates <code>root_agent: market_castro_grant_advisor</code> across 3 specialist sub-agents, Managed BigQuery MCP (<code>https://bigquery.googleapis.com/mcp</code>), and 5 parameterized GQL tools in <code>agent/tools.yaml</code>.
             </p>
           </div>
+          <button class="btn" onclick="runE2EWorkflow()">⚡ Execute 3-Sub-Agent Sequential Pipeline Now</button>
         </div>
 
-        <!-- Quick Officer Question Chips -->
-        <div class="flex flex-wrap gap-1.5 mb-3">
-          <button onclick="askPreset('Show me why we fund this business and not the runner-up or the biggest hub.')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            Why this one vs. Hub / Runner-up?
-          </button>
-          <button onclick="askPreset('What does this grant amount actually change, and what are we assuming?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            What are we assuming ($\Delta P$)?
-          </button>
-          <button onclick="askPreset('Which edges in our graph are real and which are modeled?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            Which edges are real vs. modeled?
-          </button>
-          <button onclick="askPreset('Run the equity and mechanical industry bias audit for this corridor.')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            Equity &amp; Barber Shop Bias Audit
-          </button>
-          <button onclick="askPreset('What happens if the 1,420-worker office block closes in 90 days?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            90-Day Anchor Closure Shock
-          </button>
-          <button onclick="askPreset('Did the businesses our model calls fragile actually fail in SBA 7(a) charge-off ground truth?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-900/50 border border-emerald-700/50 text-emerald-300 transition">
-            SBA Charge-Off Ground Truth
-          </button>
-          <button onclick="askPreset('Is this business behind on rent, who owns the building, and how many jobs does it support?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-amber-900/50 border border-amber-700/50 text-amber-300 transition">
-            Refusal: Rent &amp; Per-Storefront Jobs
-          </button>
-          <button onclick="askPreset('Why not fund the distressed dry cleaner leaf node (Sunset Express) through the cascade graph?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-rose-900/50 border border-rose-700/50 text-rose-300 transition">
-            Refusal: 0-Edge Leaf Storefront
-          </button>
-          <button onclick="askPreset('Did you validate your tables for duplicate element keys (Section 12 QA)?')"
-                  class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 hover:bg-blue-900/50 border border-slate-700 text-slate-300 transition">
-            Section 12 Element-Key QA
-          </button>
-        </div>
-
-        <div id="chat-log" class="h-44 overflow-y-auto custom-scroll bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2.5 text-xs mb-2.5">
-          <div class="p-2.5 rounded-lg bg-blue-950/40 border border-blue-800/40 text-slate-200">
-            <strong class="text-blue-300">ADK Agent:</strong> Ready for Friday's committee review. Select any corridor, budget, or candidate node on the left, or click a question above to inspect the multi-hop case.
+        <!-- Visual Multi-Agent Hierarchy Tree (Matches PRD Section 3.2 Diagram) -->
+        <div style="background:#070b16; border:1px solid var(--border); border-radius:10px; padding:18px; margin-bottom:16px;">
+          <div style="text-align:center; margin-bottom:16px;">
+            <div style="display:inline-block; background:rgba(56, 189, 248, 0.14); border:2px solid var(--accent); border-radius:10px; padding:10px 22px;">
+              <div style="font-family:var(--mono); font-weight:700; color:var(--accent); font-size:13.5px;">root_agent: market_castro_grant_advisor</div>
+              <div style="font-size:12px; color:var(--text);">Coordinator &amp; Conversational Router (Gemini 2.5 Pro · 9 Tools + BigQuery MCP)</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+            <div style="background:var(--panel-alt); border:1px solid #10b981; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#34d399; font-size:12.5px; margin-bottom:4px;">Sub-Agent 1: graph_cascade_analyst</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Graph Cascade &amp; Anchor Shock Specialist</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • discover_cascade_candidates<br/>
+                • simulate_anchor_closure<br/>
+                • BigQuery MCP (a4i_econ.LocalEconomy)
+              </div>
+            </div>
+            <div style="background:var(--panel-alt); border:1px solid #f59e0b; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#fbbf24; font-size:12.5px; margin-bottom:4px;">Sub-Agent 2: equity_bias_auditor</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Equity, Data Hygiene &amp; Ground-Truth Auditor</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • audit_corridor_equity_and_bias<br/>
+                • add_verified_merchant_supplier (+10 Bonus)
+              </div>
+            </div>
+            <div style="background:var(--panel-alt); border:1px solid #a855f7; border-radius:8px; padding:12px;">
+              <div style="font-family:var(--mono); font-weight:700; color:#c084fc; font-size:12.5px; margin-bottom:4px;">Sub-Agent 3: grant_portfolio_defender</div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:8px;">Friday Committee Memo &amp; Portfolio Optimizer</div>
+              <div style="font-size:12px; font-family:var(--mono); color:var(--text);">
+                • generate_friday_grant_memo<br/>
+                • compare_grant_candidates<br/>
+                • optimize_corridor_portfolio
+              </div>
+            </div>
           </div>
         </div>
 
-        <form onsubmit="sendChatMessage(event)" class="flex gap-2">
-          <input id="chat-input" type="text" placeholder="Ask e.g. 'Are any downstream buyers already fragile in SBA records?'"
-                 class="flex-1 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-xs text-white outline-none" />
-          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition">
-            Ask Agent
-          </button>
-        </form>
+        <div id="workflowSummaryBanner" class="memo-part good" style="margin-bottom:14px;">
+          Click <b>Execute 3-Sub-Agent Sequential Pipeline Now</b> to run <code>graph_cascade_analyst</code> &rarr; <code>equity_bias_auditor</code> &rarr; <code>grant_portfolio_defender</code> end-to-end.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Sub-Agent Name</th>
+              <th>Specialist Role</th>
+              <th>Tools Invoked</th>
+              <th>Latency</th>
+              <th>Key Findings Summary</th>
+            </tr>
+          </thead>
+          <tbody id="workflowTracesBody"></tbody>
+        </table>
       </div>
 
-    </div>
-  </main>
-
-  <!-- MODAL: CONVERSATIONAL BUSINESS OWNER INTAKE AGENT (BONUS ADD-ON) -->
-  <div id="intake-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-        <div>
-          <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Closing the Modeled-Edge Limitation
-          </span>
-          <h3 class="text-base font-bold text-white mt-1">Business Owner Supplier Intake Agent</h3>
+      <div class="split-grid">
+        <div class="card">
+          <h2><span>MCP Toolbox (`agent/tools.yaml`) &amp; BigQuery Bridge Status (`/api/mcp-status`)</span></h2>
+          <div class="code-box" id="mcpStatusBox">Loading MCP status...</div>
         </div>
-        <button onclick="closeIntakeModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
-      </div>
-      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
-        Public datasets do not record which local business supplies which. When a business owner tells our Intake Agent
-        <em>"We buy fresh specialty ingredients twice a week from the commissary on the corner, and they aren't replaceable,"</em>
-        this tool writes a <strong>REAL owner-verified edge</strong> directly into the graph and recomputes the 2-hop cascade.
-      </p>
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block text-slate-400 mb-1 font-medium">Upstream Supplier Business (In Corridor)</label>
-          <input id="intake-supplier" type="text" value="Merchant Roots & Commissary LLC"
-                 class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+        <div class="card">
+          <h2><span>End-to-End Cross-Member Integration Contract (`/api/health`)</span></h2>
+          <div class="code-box" id="healthStatusBox">Loading system integration status...</div>
         </div>
-        <div>
-          <label class="block text-slate-400 mb-1 font-medium">Downstream Buyer Business (Reporting Owner)</label>
-          <input id="intake-buyer" type="text" value="Larkin Street Event Hall & Stage LLC"
-                 class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-slate-400 mb-1 font-medium">Input Share (Cents per $ Output)</label>
-            <input id="intake-intensity" type="number" step="0.5" value="14.5"
-                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
-          </div>
-          <div>
-            <label class="block text-slate-400 mb-1 font-medium">Is Supplier Replaceable in 7 Days?</label>
-            <select id="intake-replaceable" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-              <option value="false" selected>No — Critical Local Dependency</option>
-              <option value="true">Yes — Commodity / Substitutable</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="block text-slate-400 mb-1 font-medium">Owner Intake Note</label>
-          <input id="intake-notes" type="text" value="Same-day custom prep deliveries 3x/week; no alternative commissary within walking distance."
-                 class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white" />
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-800">
-        <button onclick="closeIntakeModal()" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium">Cancel</button>
-        <button onclick="submitIntakeEdge()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">
-          Write Verified Edge &amp; Re-Run 2-Hop Cascade
-        </button>
       </div>
     </div>
   </div>
 
   <script>
-    let currentState = {
-      corridor: 'Central Market',
-      budget: 50000,
-      track: 'main_street',
-      split_mode: 'split_two',
-      seed_id: null,
-      lastPayload: null
-    };
+    let overviewData = null;
 
-    function setBudget(val) {
-      const slider = document.getElementById('budget-slider');
-      slider.value = val;
-      document.getElementById('budget-display').textContent = '$' + Number(val).toLocaleString();
-      refreshAnalysis();
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
     }
 
-    function switchSubTab(tab) {
-      ['gql', 'equity', 'paths', 'qa'].forEach(t => {
-        document.getElementById('subtab-' + t).classList.toggle('hidden', t !== tab);
-        const btn = document.getElementById('tab-btn-' + t);
-        if (t === tab) {
-          btn.className = 'px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white';
-        } else {
-          btn.className = 'px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700';
-        }
-      });
+    function toggleJsonModal() {
+      const wrap = document.getElementById('gqlInspectorWrap');
+      wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
     }
 
-    async function refreshAnalysis(customSeedId = null) {
-      const corridor = document.getElementById('corridor-select').value;
-      const budget = Number(document.getElementById('budget-slider').value);
-      const split_mode = document.getElementById('split-select').value;
-      const track = document.getElementById('track-select').value;
+    function resetDefaults() {
+      document.getElementById('selPrimary').value = 'Theatre Rhinoceros';
+      document.getElementById('selRunnerUp').value = 'Cafe Du Nord';
+      document.getElementById('rngGrant').value = 25000;
+      document.getElementById('rngPFailNo').value = 0.65;
+      document.getElementById('rngPFailYes').value = 0.15;
+      document.getElementById('rngSubDisc').value = 0.20;
+      refreshMemo();
+    }
 
-      if (corridor !== currentState.corridor) {
-        currentState.seed_id = null;
+    async function initDashboard() {
+      const res = await fetch('/api/overview');
+      overviewData = await res.json();
+      renderMemo(overviewData.default_memo);
+      renderHygieneAndEquity(overviewData.discovery, overviewData.audit_highlights);
+      if (overviewData.default_portfolio) {
+        renderPortfolio(overviewData.default_portfolio);
+      } else {
+        loadPortfolio();
       }
-      if (customSeedId) {
-        currentState.seed_id = customSeedId;
-      }
+      loadAnchorShock();
+      runE2EWorkflow();
+    }
 
-      currentState.corridor = corridor;
-      currentState.budget = budget;
-      currentState.split_mode = split_mode;
-      currentState.track = track;
+    function openAndRunWorkflowTab() {
+      const btn = document.getElementById('btnTabWorkflow');
+      if (btn) switchTab('tabWorkflow', btn);
+      runE2EWorkflow();
+    }
 
-      const res = await fetch('/api/analyze', {
+    async function runE2EWorkflow() {
+      const pool = document.getElementById('selPortfolioPool') ? document.getElementById('selPortfolioPool').value : 50000;
+      const k = document.getElementById('selPortfolioK') ? document.getElementById('selPortfolioK').value : 2;
+      const biz = document.getElementById('selPrimary') ? document.getElementById('selPrimary').value : 'Theatre Rhinoceros';
+      const runner = document.getElementById('selRunnerUp') ? document.getElementById('selRunnerUp').value : 'Cafe Du Nord';
+      const anchor = document.getElementById('selAnchorBlock') ? document.getElementById('selAnchorBlock').value : '060750171011001';
+
+      const res = await fetch('/api/workflow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          corridor,
-          budget,
-          track,
-          split_mode,
-          seed_id: currentState.seed_id
+          corridor_name: 'Market/Castro',
+          budget_pool_usd: parseFloat(pool),
+          num_grantees: parseInt(k, 10),
+          primary_candidate_query: biz,
+          runner_up_query: runner,
+          anchor_block_query: anchor
         })
       });
-      const data = await res.json();
-      currentState.lastPayload = data;
-      renderAll(data);
-    }
-
-    function renderAll(data) {
-      const meta = data.corridor_meta;
-      const pct = ((meta.suppliers_with_depth / Math.max(meta.businesses, 1)) * 100).toFixed(1);
-      document.getElementById('corridor-depth-kpi').textContent =
-        `${meta.suppliers_with_depth} / ${meta.businesses} (${pct}%)`;
-      document.getElementById('corridor-poverty-kpi').textContent =
-        `${(meta.poverty_rate * 100).toFixed(1)}% (${meta.tracts} tract${meta.tracts === 1 ? ' ⚠️' : 's'})`;
-
-      document.getElementById('active-seed-badge').textContent =
-        `Seed: ${data.cascade.seed.name}`;
-
-      // Update GQL & DDL blocks
-      document.getElementById('gql-code-block').textContent = data.cascade.gql_query;
-      document.getElementById('ddl-code-block').textContent = data.cascade.property_graph_ddl;
-
-      // Update Equity Audit
-      const eq = data.portfolio.equity_audit;
-      const warnBanner = document.getElementById('equity-warning-banner');
-      if (eq.warning) {
-        warnBanner.textContent = '⚠️ ' + eq.warning;
-        warnBanner.classList.remove('hidden');
-      } else {
-        warnBanner.classList.add('hidden');
+      const wf = await res.json();
+      const banner = document.getElementById('workflowSummaryBanner');
+      if (banner && wf.workflow_id) {
+        banner.innerHTML =
+          `<b>Workflow ID:</b> <code>${wf.workflow_id}</code> · <b>Mode:</b> <code>${wf.execution_mode}</code> · ` +
+          `<b>Total Execution Time:</b> <code>${wf.total_execution_ms} ms</code><br/>` +
+          `<b>Executive Committee Brief:</b> ${wf.executive_committee_brief}`;
       }
-      document.getElementById('eq-poverty-compare').textContent =
-        `${(eq.funded_tract_poverty_rate * 100).toFixed(1)}% Funded vs ${(eq.corridor_poverty_rate * 100).toFixed(1)}% Avg`;
-      document.getElementById('eq-vehicle-compare').textContent =
-        `Funded tracts have ${(eq.funded_tract_no_vehicle_rate * 100).toFixed(1)}% car-free households and $${eq.corridor_median_income.toLocaleString()} median income.`;
-      document.getElementById('eq-filter-compare').textContent =
-        `${Math.round(eq.privacy_filter_impact.removed_pct * 100)}% Removed (${eq.privacy_filter_impact.raw_city_listings.toLocaleString()} → ${eq.privacy_filter_impact.survived_storefronts})`;
-
-      renderCandidatesTable(data);
-      renderPathsTable(data.cascade);
-      renderQaTable(data.qa_validation);
-      renderCascadeGraph(data.cascade);
-      renderMemo(data);
+      const tbody = document.getElementById('workflowTracesBody');
+      if (tbody && wf.sub_agent_traces) {
+        tbody.innerHTML = wf.sub_agent_traces.map(t => `
+          <tr>
+            <td><span class="tag tag-hop1">Step ${t.step_order}</span></td>
+            <td style="font-family:var(--mono);font-weight:700;color:var(--accent)">${t.sub_agent_name}</td>
+            <td>${t.role_description}</td>
+            <td style="font-family:var(--mono);font-size:11.5px">${(t.tools_invoked || []).join(', ')}</td>
+            <td style="font-family:var(--mono);color:var(--emerald)">${t.execution_ms} ms</td>
+            <td>${t.key_findings_summary}</td>
+          </tr>
+        `).join('');
+      }
+      if (wf.extra && wf.extra.system_integration_status) {
+        const st = wf.extra.system_integration_status;
+        document.getElementById('mcpStatusBox').textContent = JSON.stringify(st.member2_multi_agent_and_mcp_ready, null, 2);
+        document.getElementById('healthStatusBox').textContent = JSON.stringify(st, null, 2);
+      }
     }
 
-    function renderQaTable(qa) {
-      if (!qa) return;
-      document.getElementById('qa-pass-badge').textContent = `${qa.passed_checks}/${qa.total_checks}`;
-      document.getElementById('qa-summary-pill').textContent = `${qa.passed_checks} / ${qa.total_checks} PASS`;
-      const tbody = document.getElementById('qa-tbody');
-      tbody.innerHTML = '';
-      qa.checks.forEach(c => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-800/40';
-        tr.innerHTML = `
-          <td class="py-1.5 px-2.5 text-slate-400 font-semibold whitespace-nowrap">${c.category}</td>
-          <td class="py-1.5 px-2 text-white font-mono-code">${c.name}</td>
-          <td class="py-1.5 px-2 text-center">
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${c.passed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300'}">${c.status}</span>
+    async function loadPortfolio() {
+      const k = document.getElementById('selPortfolioK').value;
+      const pool = document.getElementById('selPortfolioPool').value;
+      const res = await fetch(`/api/portfolio?num_grantees=${encodeURIComponent(k)}&budget_pool=${encodeURIComponent(pool)}&deduplicate=true`);
+      const data = await res.json();
+      renderPortfolio(data);
+    }
+
+    function renderPortfolio(p) {
+      const warnHtml = (p.dilution_warnings || []).length > 0
+        ? `<div style="color:var(--rose);margin-top:4px;"><b>⚠️ Dilution Warning:</b> ${p.dilution_warnings.join(' ')}</div>`
+        : `<div style="color:var(--emerald);margin-top:4px;">✓ All grants meet the $${p.min_effective_grant_usd.toLocaleString()} minimum survival runway floor. Total unique physical storefronts protected: <b>${p.total_unique_physical_storefronts_protected}</b> (${p.total_unique_2hop_nodes_protected} total 2-hop nodes).</div>`;
+      document.getElementById('portfolioGuidanceBox').innerHTML = `<div>${p.committee_guidance}</div>${warnHtml}`;
+      document.getElementById('portfolioTableBody').innerHTML = (p.selected_portfolio || []).map(s => `
+        <tr>
+          <td><span class="tag tag-hop1">#${s.slot}</span></td>
+          <td><b>${s.name}</b><br/><span style="font-size:11px;color:var(--muted)">${s.address} · NAICS ${s.naics4}</span></td>
+          <td style="font-family:var(--mono)">${s.marginal_keystone_score}</td>
+          <td style="font-family:var(--mono);color:var(--emerald)"><b>+${s.new_unique_physical_added}</b> (cum ${s.cumulative_unique_physical_protected})</td>
+          <td style="font-family:var(--mono)">${s.subgraph_redundancy_pct}%</td>
+          <td style="font-family:var(--mono);color:${s.meets_minimum_survival_floor ? 'var(--emerald)' : 'var(--rose)'}">
+            <b>$${s.recommended_grant_usd.toLocaleString()}</b>
           </td>
-          <td class="py-1.5 px-2 text-blue-300 font-mono-code">${c.detail}</td>
-          <td class="py-1.5 px-2 text-slate-400">${c.why_it_matters}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+        </tr>
+      `).join('');
     }
 
-    function renderCandidatesTable(data) {
-      const tbody = document.getElementById('candidates-tbody');
-      tbody.innerHTML = '';
-      const activeSeed = data.active_seed_id;
+    async function refreshMemo() {
+      const biz = document.getElementById('selPrimary').value;
+      const runner = document.getElementById('selRunnerUp').value;
+      const grant = parseFloat(document.getElementById('rngGrant').value);
+      const pNo = parseFloat(document.getElementById('rngPFailNo').value);
+      const pYes = parseFloat(document.getElementById('rngPFailYes').value);
+      const subDisc = parseFloat(document.getElementById('rngSubDisc').value);
 
-      const roleBadges = {
-        sweet_spot_primary: '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">★ Primary Pick (5..25 Band)</span>',
-        sweet_spot_runner_up: '<span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold">Runner-Up (Co-Fund Shield)</span>',
-        sweet_spot_third: '<span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Tier 3 Reserve</span>',
-        centrality_hub_trap: '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Giant Hub Trap (Robust)</span>',
-        leaf_applicant: '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">0-Cascade Leaf (BEA Bias)</span>'
+      document.getElementById('lblGrantAmt').textContent = `$${grant.toLocaleString()} / $50,000 Pool`;
+      document.getElementById('lblPFailNo').textContent = `${Math.round(pNo * 100)}%`;
+      document.getElementById('lblPFailYes').textContent = `${Math.round(pYes * 100)}%`;
+      document.getElementById('lblSubDisc').textContent = `${Math.round(subDisc * 100)}%`;
+
+      const qs = new URLSearchParams({
+        business: biz,
+        runner_up: runner,
+        grant_amount: grant,
+        budget_pool: 50000,
+        p_fail_no_grant: pNo,
+        p_fail_grant: pYes,
+        sub_discount: subDisc
+      });
+      const res = await fetch(`/api/memo?${qs.toString()}`);
+      const memo = await res.json();
+      renderMemo(memo);
+    }
+
+    function renderMemo(m) {
+      document.getElementById('focalIdBadge').textContent = m.recommended_business_id;
+      document.getElementById('kpiExpectedJobs').textContent = `${m.expected_jobs_saved_delta} jobs`;
+      document.getElementById('kpiCostPerJob').textContent = `$${m.cost_per_expected_job_saved_usd.toLocaleString()}/job`;
+      document.getElementById('memoHeaderBadge').textContent =
+        `${m.direct_1hop_count} Direct + ${m.indirect_2hop_count} Indirect (${m.total_2hop_exposed_count} Exposed)`;
+
+      document.getElementById('part1Body').innerHTML =
+        `<b>${m.recommended_business_name}</b> (<code>${m.recommended_business_id}</code> · <b>${m.recommended_address}</b> · NAICS <code>${m.recommended_naics4}</code> ${m.recommended_naics_label}).<br/>` +
+        `<span style="color:var(--emerald);font-weight:600;">Grant Allocation: $${m.grant_amount_usd.toLocaleString()}</span> — ${m.allocation_split_note}`;
+
+      document.getElementById('part2Body').innerHTML =
+        `Protects <b>${m.direct_1hop_count} direct 1-hop buyers</b> (summed 1-hop intensity = <code>${m.total_1hop_intensity}</code>) and ` +
+        `<b>${m.indirect_2hop_count} indirect 2-hop buyers</b> (<b>${m.total_2hop_exposed_count} total downstream nodes</b>; ` +
+        `<b>${m.brick_and_mortar_exposed_count} verified physical storefronts</b>). ` +
+        `Total corridor jobs exposed: <b>${m.estimated_downstream_jobs_protected} jobs</b> &rarr; ` +
+        `<b>${m.expected_jobs_saved_delta} expected jobs saved</b> (<b>$${m.cost_per_expected_job_saved_usd.toLocaleString()}</b> per expected job saved).`;
+
+      document.getElementById('part3Body').innerHTML =
+        `Executed BigQuery Property Graph <code>ANY SHORTEST</code> path traversal over <code>a4i_econ.LocalEconomy</code>, ` +
+        `returning <code>${m.to_json_paths.length}</code> serialized <code>TO_JSON(p)</code> paths across 1-to-2 hops (rendered live in the SVG topology and table on the right).`;
+
+      document.getElementById('part4Body').innerHTML =
+        `<div style="margin-bottom:6px;"><b>Why Not Runner-Up (${m.runner_up_business_name}):</b> ${m.why_not_runner_up}</div>` +
+        `<div style="margin-bottom:6px;"><b>Why Not Raw Centrality Winner:</b> ${m.why_not_biggest_hub}</div>` +
+        `<div style="font-size:12px;color:var(--muted);">${m.duplicate_registration_note}</div>`;
+
+      document.getElementById('part5Body').innerHTML = m.assumptions_statement;
+      document.getElementById('part6Body').innerHTML =
+        `<div>${m.real_vs_modeled_statement}</div>` +
+        `<div style="margin-top:6px;font-size:12px;color:var(--accent-2);"><b>SBA 7(a) Validation:</b> ${m.sba_loan_validation_note}</div>`;
+
+      const tc = m.tract_context;
+      document.getElementById('part7Body').innerHTML =
+        `Located in <b>${tc.tract_name}</b> (11-char ACS GEOID <code>${tc.tract_geoid}</code> · Pop <code>${tc.total_pop.toLocaleString()}</code>): ` +
+        `Median household income <b>$${tc.median_income.toLocaleString()}</b>, Poverty rate <b>${(tc.poverty_rate * 100).toFixed(1)}%</b> ` +
+        `(corridor avg ${(tc.corridor_avg_poverty_rate * 100).toFixed(1)}%), Car-free households <b>${(tc.no_vehicle_rate * 100).toFixed(1)}%</b> ` +
+        `(corridor avg ${(tc.corridor_avg_no_vehicle_rate * 100).toFixed(1)}%), Relative Equity Need Multiplier <code>${tc.relative_need_multiplier}x</code>.`;
+
+      document.getElementById('gqlQueryBox').textContent = m.gql_query_executed;
+      document.getElementById('toJsonBox').textContent = JSON.stringify(m.to_json_paths.slice(0, 2), null, 2);
+
+      renderCascadeTable(m.cascade_nodes);
+      renderCascadeSvg(m);
+    }
+
+    function renderCascadeTable(nodes) {
+      const tbody = document.getElementById('cascadeTableBody');
+      tbody.innerHTML = nodes.map(n => `
+        <tr>
+          <td>
+            <span class="tag ${n.hop === 1 ? 'tag-hop1' : 'tag-hop2'}">Hop ${n.hop}</span>
+            ${n.is_verified_edge ? '<span class="tag tag-verified">VERIFIED</span>' : ''}
+          </td>
+          <td><b>${n.name}</b><br/><span style="font-size:11px;color:var(--muted)">${n.naics_label}</span></td>
+          <td>${n.address}</td>
+          <td>${n.via_business_name ? n.via_business_name : '<span style="color:var(--muted)">Direct (Hop 1)</span>'}</td>
+          <td style="font-family:var(--mono)">${n.compounded_intensity}</td>
+          <td style="font-family:var(--mono)">${n.metres}m</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCascadeSvg(memo) {
+      const svg = document.getElementById('cascadeSvg');
+      const cx = 340, cy = 210;
+      const nodes = memo.cascade_nodes || [];
+      const hop1 = nodes.filter(n => n.hop === 1).slice(0, 10);
+      const hop2 = nodes.filter(n => n.hop === 2).slice(0, 14);
+
+      let html = '';
+      // Guide rings
+      html += `<circle cx="${cx}" cy="${cy}" r="105" fill="none" stroke="#1e293b" stroke-dasharray="4 4" />`;
+      html += `<circle cx="${cx}" cy="${cy}" r="182" fill="none" stroke="#1e293b" stroke-dasharray="3 5" />`;
+
+      const hop1Coords = {};
+      hop1.forEach((n, idx) => {
+        const angle = (2 * Math.PI * idx) / Math.max(hop1.length, 1) - Math.PI / 2;
+        hop1Coords[n.business_id] = {
+          x: cx + 105 * Math.cos(angle),
+          y: cy + 105 * Math.sin(angle),
+          node: n
+        };
+      });
+
+      const hop2Coords = hop2.map((n, idx) => {
+        const angle = (2 * Math.PI * idx) / Math.max(hop2.length, 1) - Math.PI / 3;
+        return {
+          x: cx + 182 * Math.cos(angle),
+          y: cy + 182 * Math.sin(angle),
+          node: n
+        };
+      });
+
+      // Draw Hop 1 -> Hop 2 edges
+      hop2Coords.forEach(h2 => {
+        const via = hop1Coords[h2.node.via_business_id];
+        const sx = via ? via.x : cx;
+        const sy = via ? via.y : cy;
+        html += `<line x1="${sx}" y1="${sy}" x2="${h2.x}" y2="${h2.y}" stroke="#0284c7" stroke-opacity="0.55" stroke-width="1.5" />`;
+      });
+
+      // Draw Focal -> Hop 1 edges
+      Object.values(hop1Coords).forEach(h1 => {
+        const strokeColor = h1.node.is_verified_edge ? '#f59e0b' : '#10b981';
+        const width = Math.max(2, Math.min(5.5, h1.node.edge_intensity * 26));
+        html += `<line x1="${cx}" y1="${cy}" x2="${h1.x}" y2="${h1.y}" stroke="${strokeColor}" stroke-opacity="0.85" stroke-width="${width}" />`;
+      });
+
+      // Draw Hop 2 nodes
+      hop2Coords.forEach(h2 => {
+        const fill = h2.node.is_virtual_mailbox ? '#f43f5e' : '#38bdf8';
+        html += `<g>
+          <circle cx="${h2.x}" cy="${h2.y}" r="6.5" fill="${fill}" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="${h2.x}" y="${h2.y - 9}" text-anchor="middle" fill="#cbd5e1" font-size="9.5">${h2.node.name.slice(0, 18)}</text>
+        </g>`;
+      });
+
+      // Draw Hop 1 nodes
+      Object.values(hop1Coords).forEach(h1 => {
+        const fill = h1.node.is_virtual_mailbox ? '#f43f5e' : '#10b981';
+        html += `<g>
+          <circle cx="${h1.x}" cy="${h1.y}" r="9" fill="${fill}" stroke="#0f172a" stroke-width="2"/>
+          <text x="${h1.x}" y="${h1.y - 12}" text-anchor="middle" fill="#ecfdf5" font-weight="600" font-size="10.5">${h1.node.name.slice(0, 20)}</text>
+        </g>`;
+      });
+
+      // Draw Focal node
+      html += `<g>
+        <circle cx="${cx}" cy="${cy}" r="15" fill="#f59e0b" stroke="#fff" stroke-width="2.5"/>
+        <text x="${cx}" y="${cy + 27}" text-anchor="middle" fill="#fde68a" font-weight="700" font-size="11.5">${memo.recommended_business_name}</text>
+      </g>`;
+
+      svg.innerHTML = html;
+    }
+
+    function renderHygieneAndEquity(discovery, audit) {
+      const ktBody = document.getElementById('keystoneTableBody');
+      ktBody.innerHTML = (discovery.actionable_keystone_candidates || []).map(c => `
+        <tr>
+          <td><b>${c.name}</b></td>
+          <td>${c.address}</td>
+          <td><code>${c.naics4}</code> ${c.naics_label}</td>
+          <td style="font-family:var(--mono)">${c.direct_1hop_count}</td>
+          <td style="font-family:var(--mono)"><b>${c.total_2hop_exposed_count}</b></td>
+          <td style="font-family:var(--mono)">${c.total_1hop_intensity}</td>
+          <td style="font-family:var(--mono);color:var(--emerald)"><b>${c.actionable_keystone_score}</b></td>
+        </tr>
+      `).join('');
+
+      const trapBody = document.getElementById('trapTableBody');
+      trapBody.innerHTML = (discovery.disqualified_naive_centrality_traps || []).map(t => `
+        <tr>
+          <td><b>${t.name}</b> (<code>${t.business_id}</code>)</td>
+          <td>${t.address}</td>
+          <td style="font-family:var(--mono)">${t.total_2hop_exposed_count}</td>
+          <td>
+            <span class="tag tag-trap">
+              ${t.is_virtual_mailbox_hub
+                ? `Virtual Mailbox Hub (${t.address_co_tenant_count} co-tenants at same street address)`
+                : `Sole NAICS ${t.naics4} Supplier Monopoly Artifact (${t.direct_1hop_count} mechanical links)`}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+      const tractBody = document.getElementById('tractTableBody');
+      tractBody.innerHTML = (audit.tracts || []).map(t => `
+        <tr>
+          <td style="font-family:var(--mono)"><b>${t.geo_id}</b></td>
+          <td style="font-family:var(--mono)">${t.businesses_in_tract}</td>
+          <td style="font-family:var(--mono)">$${t.median_income.toLocaleString()}</td>
+          <td style="font-family:var(--mono)">${(t.poverty_rate * 100).toFixed(1)}%</td>
+          <td style="font-family:var(--mono)">${(t.no_vehicle_rate * 100).toFixed(1)}%</td>
+          <td style="font-family:var(--mono);color:var(--accent)"><b>${t.relative_need_multiplier}x</b></td>
+        </tr>
+      `).join('');
+
+      const dups = (audit.duplicate_dbas || []).map(d =>
+        `<li><b>${d.records.map(r => `${r.name} (${r.address}, ID ${r.business_id})`).join(' &harr; ')}</b></li>`
+      ).join('');
+      const chgoffs = (audit.sba_loans?.chargeoff_loans || []).map(l =>
+        `<li><b>${l.borrower_name}</b> (${l.borrower_address}) — Gross Approval <b>$${l.gross_approval.toLocaleString()}</b>, Charged Off <b>$${l.chargeoff_amount.toLocaleString()}</b> on ${l.chargeoff_date}</li>`
+      ).join('');
+
+      document.getElementById('hygieneDetailsBox').innerHTML = `
+        <div style="margin-bottom:10px;">
+          <b style="color:var(--accent);">Duplicate DBA Tax Registrations Detected in Market/Castro:</b>
+          <ul style="margin:6px 0; padding-left:18px;">${dups}</ul>
+        </div>
+        <div>
+          <b style="color:var(--rose);">Historical SBA 7(a) Charge-Off Ground Truth (Liquidity Default Proof):</b>
+          <ul style="margin:6px 0; padding-left:18px;">${chgoffs}</ul>
+        </div>
+      `;
+    }
+
+    async function loadAnchorShock() {
+      const blk = document.getElementById('selAnchorBlock').value;
+      const res = await fetch(`/api/anchor-shock?anchor=${encodeURIComponent(blk)}`);
+      const data = await res.json();
+      document.getElementById('anchorNarrative').innerHTML =
+        `<b>Shock Simulation:</b> ${data.narrative_summary}`;
+
+      document.getElementById('anchorDirectBody').innerHTML =
+        (data.top_footfall_dependent_storefronts || []).map(s => `
+          <tr>
+            <td><b>${s.name}</b></td>
+            <td>${s.address}</td>
+            <td>${s.naics_label}</td>
+            <td style="font-family:var(--mono)">${s.footfall_weight}</td>
+            <td style="font-family:var(--mono)">${s.metres_from_anchor}m</td>
+          </tr>
+        `).join('');
+
+      document.getElementById('anchorUpstreamBody').innerHTML =
+        (data.top_upstream_suppliers_at_risk || []).map(u => `
+          <tr>
+            <td><b>${u.supplier_name}</b></td>
+            <td>${u.supplier_address}</td>
+            <td style="font-family:var(--mono)">${u.affected_buyers_count}</td>
+            <td style="font-family:var(--mono);color:var(--accent-2)"><b>${u.cumulative_joint_shock_score}</b></td>
+            <td style="font-size:11.5px;color:var(--muted)">${u.affected_storefront_buyers.join(', ')}</td>
+          </tr>
+        `).join('');
+    }
+
+    async function submitVerifiedEdge() {
+      const payload = {
+        supplier_query: document.getElementById('inpSupplier').value,
+        buyer_query: document.getElementById('inpBuyer').value,
+        reported_dependency_share: parseFloat(document.getElementById('inpShare').value),
+        invoice_note: document.getElementById('inpNote').value
       };
-
-      data.portfolio.candidates.forEach(c => {
-        const isSelected = c.business_id === activeSeed;
-        const tr = document.createElement('tr');
-        tr.className = `cursor-pointer transition ${isSelected ? 'bg-blue-950/60 border-l-4 border-l-blue-500' : 'hover:bg-slate-800/50'}`;
-        tr.onclick = () => refreshAnalysis(c.business_id);
-
-        const sbaText = c.sba_loan
-          ? `<span class="${c.sba_loan.loan_status.includes('PIF') ? 'text-slate-400' : 'text-amber-300 font-semibold'}">${c.sba_loan.loan_status}</span>`
-          : '<span class="text-slate-500">None in FOIA</span>';
-
-        tr.innerHTML = `
-          <td class="py-2 px-2.5 font-semibold text-white">
-            <div>${c.name}</div>
-            <div class="text-[10px] text-slate-400 font-normal">${c.address} • NAICS ${c.naics4}</div>
-          </td>
-          <td class="py-2 px-2">${roleBadges[c.role] || c.role}</td>
-          <td class="py-2 px-2 text-right font-mono-code font-bold text-blue-300">${c.exposed_1hop} / ${c.exposed_2hop}</td>
-          <td class="py-2 px-2 text-right font-mono-code text-emerald-300">${(c.mean_intensity * 100).toFixed(2)}¢/$</td>
-          <td class="py-2 px-2 text-right font-mono-code ${c.distress_score >= 0.65 ? 'text-rose-400 font-bold' : 'text-slate-300'}">${c.distress_score.toFixed(2)}</td>
-          <td class="py-2 px-2 text-[11px]">${sbaText}</td>
-          <td class="py-2 px-2 text-right">
-            <button class="px-2 py-1 rounded text-[11px] font-semibold ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
-              ${isSelected ? 'Viewing Graph' : 'Trace 2-Hop'}
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+      const res = await fetch('/api/merchant-intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-    }
-
-    function renderPathsTable(cascade) {
-      const tbody = document.getElementById('paths-tbody');
-      tbody.innerHTML = '';
-      if (!cascade.hop2_paths.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">No 2-hop downstream supply paths from this node (Leaf storefront — sells directly to consumers).</td></tr>`;
+      const data = await res.json();
+      const wrap = document.getElementById('intakeResultBox');
+      wrap.style.display = 'block';
+      if (data.status === 'error') {
+        document.getElementById('intakeSummaryText').innerHTML = `<span style="color:var(--rose)">${data.message}</span>`;
         return;
       }
-      cascade.hop2_paths.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="py-1.5 px-2 text-blue-300">${p.seed_name}</td>
-          <td class="py-1.5 px-2 text-amber-300">${p.hop1_name} (${(p.hop1_intensity * 100).toFixed(2)}¢/$, ${p.hop1_metres}m)</td>
-          <td class="py-1.5 px-2 text-emerald-300">${p.hop2_name} (${(p.hop2_intensity * 100).toFixed(2)}¢/$, ${p.hop2_metres}m)</td>
-          <td class="py-1.5 px-2 text-right text-white font-bold">${p.compounded_weight.toFixed(5)}</td>
-          <td class="py-1.5 px-2 text-right text-slate-300">${p.weakest_link_weight.toFixed(4)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+      const d = data.cascade_impact_delta;
+      document.getElementById('intakeSummaryText').innerHTML =
+        `<b>${data.action}</b><br/>` +
+        `Supplier <b>${data.supplier.name}</b> &rarr; Buyer <b>${data.buyer.name}</b> (${data.distance_metres}m).<br/>` +
+        `1-Hop Intensity shifted from <code>${d.before_1hop_intensity}</code> &rarr; <b><code>${d.after_1hop_intensity}</code></b> | ` +
+        `Protected Corridor Jobs: <code>${d.before_jobs_protected}</code> &rarr; <b><code>${d.after_jobs_protected}</code></b>.`;
+      document.getElementById('intakeDmlBox').textContent = data.bigquery_dml_statement;
+      refreshMemo();
     }
 
-    function renderCascadeGraph(cascade) {
-      const svg = document.getElementById('cascade-svg');
-      svg.innerHTML = '';
-
-      const nodes = cascade.graph_visual.nodes;
-      const edges = cascade.graph_visual.edges;
-
-      // Update Inspector with Seed Node initially
-      const seedNode = nodes.find(n => n.hop === 0) || nodes[0];
-      if (seedNode) updateNodeInspector(seedNode);
-
-      // Defs for arrow markers
-      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      defs.innerHTML = `
-        <marker id="arrow-supply-1" viewBox="0 0 10 10" refX="26" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="#60a5fa" />
-        </marker>
-        <marker id="arrow-supply-2" viewBox="0 0 10 10" refX="26" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="#34d399" />
-        </marker>
-        <marker id="arrow-footfall" viewBox="0 0 10 10" refX="26" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="#f472b6" />
-        </marker>
-      `;
-      svg.appendChild(defs);
-
-      // Column X positions by hop level:
-      // Hop -1 (Employer Block): x=115
-      // Hop 0 (Seed Supplier):   x=280
-      // Hop 1 (Direct Buyers):   x=525
-      // Hop 2 (Indirect Cascade):x=785
-      const colX = { '-1': 110, '0': 275, '1': 530, '2': 785 };
-
-      // Draw subtle column guide bands
-      const guides = [
-        { x: 110, label: 'EMPLOYER BLOCK (LEHD)' },
-        { x: 275, label: 'HOP 0: APPLICANT SEED' },
-        { x: 530, label: 'HOP 1: DIRECT BUYERS' },
-        { x: 785, label: 'HOP 2: INDIRECT CASCADE' }
-      ];
-      guides.forEach(g => {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', g.x);
-        line.setAttribute('y1', 32);
-        line.setAttribute('x2', g.x);
-        line.setAttribute('y2', 405);
-        line.setAttribute('stroke', '#1e293b');
-        line.setAttribute('stroke-dasharray', '4 4');
-        svg.appendChild(line);
-
-        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        txt.setAttribute('x', g.x);
-        txt.setAttribute('y', 20);
-        txt.setAttribute('text-anchor', 'middle');
-        txt.setAttribute('fill', '#64748b');
-        txt.setAttribute('font-size', '10');
-        txt.setAttribute('font-weight', '700');
-        txt.textContent = g.label;
-        svg.appendChild(txt);
-      });
-
-      // Compute Y positions per hop column
-      const grouped = { '-1': [], '0': [], '1': [], '2': [] };
-      nodes.forEach(n => {
-        const k = String(n.hop);
-        if (!grouped[k]) grouped[k] = [];
-        grouped[k].push(n);
-      });
-
-      const posMap = {};
-      Object.keys(grouped).forEach(k => {
-        const arr = grouped[k];
-        const count = arr.length;
-        arr.forEach((n, idx) => {
-          const x = colX[k] || 450;
-          const topPad = k === '2' ? 58 : 65;
-          const bottomPad = 365;
-          const y = count === 1
-            ? 210
-            : topPad + (idx * ((bottomPad - topPad) / Math.max(count - 1, 1)));
-          posMap[n.id] = { x, y, node: n };
-        });
-      });
-
-      // Draw edges
-      edges.forEach(e => {
-        const src = posMap[e.source];
-        const dst = posMap[e.target];
-        if (!src || !dst) return;
-
-        const isFootfall = e.label === 'DrawsFootfall';
-        const isVerified = !e.modeled;
-        const strokeColor = isVerified
-          ? '#f59e0b'
-          : (isFootfall ? '#ec4899' : (e.hop === 1 ? '#3b82f6' : '#10b981'));
-
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        const midX = (src.x + dst.x) / 2;
-        const d = `M ${src.x} ${src.y} C ${midX} ${src.y}, ${midX} ${dst.y}, ${dst.x} ${dst.y}`;
-        path.setAttribute('d', d);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', strokeColor);
-        path.setAttribute('stroke-width', isVerified ? '3.2' : Math.max(1.6, Math.min(3.8, e.intensity * 26)));
-        path.setAttribute('stroke-opacity', '0.82');
-        if (e.modeled) {
-          path.setAttribute('stroke-dasharray', isFootfall ? '3 3' : '6 3');
-        }
-        path.setAttribute(
-          'marker-end',
-          isFootfall ? 'url(#arrow-footfall)' : (e.hop === 1 ? 'url(#arrow-supply-1)' : 'url(#arrow-supply-2)')
-        );
-        svg.appendChild(path);
-
-        // Edge intensity label at midpoint
-        const lx = (src.x * 0.45) + (dst.x * 0.55);
-        const ly = (src.y * 0.45) + (dst.y * 0.55) - 5;
-        const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        labelText.setAttribute('x', lx);
-        labelText.setAttribute('y', ly);
-        labelText.setAttribute('text-anchor', 'middle');
-        labelText.setAttribute('fill', isFootfall ? '#f9a8d4' : '#cbd5e1');
-        labelText.setAttribute('font-size', '9.5');
-        labelText.setAttribute('font-family', 'JetBrains Mono, monospace');
-        labelText.textContent = isFootfall
-          ? `${Math.round(e.worker_share)} wkrs`
-          : `${(e.intensity * 100).toFixed(1)}¢/$ (${Math.round(e.metres)}m)`;
-        svg.appendChild(labelText);
-      });
-
-      // Draw nodes
-      Object.values(posMap).forEach(({ x, y, node }) => {
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('transform', `translate(${x}, ${y})`);
-        g.setAttribute('class', 'cursor-pointer');
-        g.onclick = () => updateNodeInspector(node);
-
-        const fillMap = {
-          '-1': '#be185d',
-          '0': '#2563eb',
-          '1': '#d97706',
-          '2': '#059669'
-        };
-        const ringMap = {
-          '-1': '#f472b6',
-          '0': '#93c5fd',
-          '1': '#fcd34d',
-          '2': '#6ee7b7'
-        };
-
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('r', node.hop === 0 ? '21' : '16');
-        circle.setAttribute('fill', fillMap[String(node.hop)] || '#3b82f6');
-        circle.setAttribute('stroke', ringMap[String(node.hop)] || '#ffffff');
-        circle.setAttribute('stroke-width', node.hop === 0 ? '3' : '2');
-        if (node.hop === 0) circle.setAttribute('class', 'node-pulse');
-        g.appendChild(circle);
-
-        // SBA Charge-Off / Loan Indicator badge on node
-        if (node.sba_loan) {
-          const badge = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          badge.setAttribute('cx', '13');
-          badge.setAttribute('cy', '-13');
-          badge.setAttribute('r', '5.5');
-          badge.setAttribute('fill', node.sba_loan.charged_off ? '#ef4444' : '#f59e0b');
-          badge.setAttribute('stroke', '#0f172a');
-          badge.setAttribute('stroke-width', '1.5');
-          g.appendChild(badge);
-        }
-
-        // Node short code inside circle
-        const iconTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        iconTxt.setAttribute('y', '4');
-        iconTxt.setAttribute('text-anchor', 'middle');
-        iconTxt.setAttribute('fill', '#ffffff');
-        iconTxt.setAttribute('font-size', '10');
-        iconTxt.setAttribute('font-weight', '700');
-        iconTxt.textContent = node.node_type === 'Employer' ? 'EMP' : node.naics4;
-        g.appendChild(iconTxt);
-
-        // Node name pill below circle
-        const shortName = node.name.replace(/ LLC| Inc| Corp| Co/g, '').slice(0, 26);
-        const nameTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        nameTxt.setAttribute('y', node.hop === 0 ? '34' : '28');
-        nameTxt.setAttribute('text-anchor', 'middle');
-        nameTxt.setAttribute('fill', '#f8fafc');
-        nameTxt.setAttribute('font-size', '10.5');
-        nameTxt.setAttribute('font-weight', '600');
-        nameTxt.textContent = shortName;
-        g.appendChild(nameTxt);
-
-        svg.appendChild(g);
-      });
+    async function sendQuickChat(text) {
+      document.getElementById('chatInput').value = text;
+      await sendChat();
     }
 
-    function updateNodeInspector(node) {
-      const hopLabels = {
-        '-1': 'Employer Block • Real LEHD Jobs',
-        '0': 'Hop 0 • Applicant Seed Node',
-        '1': 'Hop 1 • Direct Buyer Exposed',
-        '2': 'Hop 2 • Indirect Cascade Exposed'
-      };
-      document.getElementById('insp-hop-tag').textContent = hopLabels[String(node.hop)] || 'Corridor Node';
-      document.getElementById('insp-naics').textContent = `NAICS ${node.naics4}`;
-      document.getElementById('insp-name').textContent = node.name;
-      document.getElementById('insp-address').textContent = `${node.address} • Tract ${node.tract} (${(node.tract_poverty_rate * 100).toFixed(1)}% pov)`;
-      document.getElementById('insp-distress').textContent = `${node.distress_score.toFixed(2)}`;
-      document.getElementById('insp-footfall').textContent = `${node.footfall_workers.toLocaleString()} workers`;
-
-      const sbaBox = document.getElementById('insp-sba-box');
-      if (node.sba_loan) {
-        sbaBox.innerHTML = `<span class="${node.sba_loan.charged_off ? 'text-rose-400' : 'text-emerald-400'} font-semibold">REAL SBA 7(a):</span> <span class="text-slate-200">$${node.sba_loan.gross_approval.toLocaleString()} • ${node.sba_loan.loan_status}</span>`;
-      } else {
-        sbaBox.innerHTML = `<span class="text-slate-400">No SBA 7(a) FOIA record matched (Real registry node)</span>`;
-      }
-    }
-
-    function renderMemo(data) {
-      const p = data.portfolio.primary_recommendation;
-      const r = data.portfolio.runner_up;
-      const h = data.portfolio.hub_trap_comparison;
-      const l = data.portfolio.leaf_comparison;
-      const c = data.cascade;
-      const eq = data.portfolio.equity_audit;
-
-      const allocHtml = data.portfolio.allocations.map(a => `
-        <div class="p-2.5 rounded-lg bg-emerald-950/10 border border-emerald-800/30 flex items-start justify-between gap-2">
-          <div>
-            <div class="font-bold text-slate-900 text-xs">${a.name} <span class="font-normal text-slate-600">(${a.address}, NAICS ${a.naics4})</span></div>
-            <div class="text-[11px] text-slate-700 mt-0.5"><strong>${a.tier}:</strong> ${a.purpose}</div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="font-mono-code font-extrabold text-emerald-800 text-sm">$${a.grant_amount.toLocaleString()}</div>
-            <div class="text-[10px] font-mono-code text-emerald-700">&Delta;P: ${a.delta_survival_prob}</div>
-          </div>
-        </div>
-      `).join('');
-
-      const hop1Html = c.hop1_businesses.map(b1 => `
-        <li class="py-1">
-          <strong>${b1.name}</strong> (${b1.address}, NAICS <code>${b1.naics4}</code>) —
-          BEA Input Share: <strong>${(b1.intensity * 100).toFixed(2)}¢/$</strong>,
-          Walk: <strong>${b1.metres}m</strong>,
-          Footfall: <strong>${b1.footfall_workers} workers</strong>
-          ${b1.sba_loan ? `<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-900 font-semibold text-[10px]">REAL SBA: ${b1.sba_loan.loan_status}</span>` : ''}
-        </li>
-      `).join('');
-
-      const seenH2 = new Set();
-      const hop2Html = c.hop2_paths.filter(path => {
-        const k = path.hop1_id + '|' + path.hop2_id;
-        if (seenH2.has(k)) return false;
-        seenH2.add(k);
-        return true;
-      }).slice(0, 5).map(path => `
-        <li class="py-1">
-          <code>${path.seed_name.split(' ')[0]}</code> &rarr; <strong>${path.hop1_name}</strong> (${(path.hop1_intensity * 100).toFixed(1)}¢/$)
-          &rarr; <strong class="text-emerald-900">${path.hop2_name}</strong> (NAICS <code>${path.hop2_naics4}</code>, ${(path.hop2_intensity * 100).toFixed(1)}¢/$, ${path.hop2_metres}m)
-          <span class="font-mono-code text-[10px] text-slate-600">[Compounded: ${path.compounded_weight.toFixed(4)} | Weakest: ${path.weakest_link_weight.toFixed(3)}]</span>
-        </li>
-      `).join('');
-
-      document.getElementById('memo-rendered').innerHTML = `
-        <div class="border-b-2 border-slate-900 pb-3">
-          <div class="flex items-center justify-between text-[10px] font-mono-code uppercase tracking-widest text-slate-600">
-            <span>City &amp; County of San Francisco • OEWD</span>
-            <span>Friday Committee Decision Artifact</span>
-          </div>
-          <h3 class="font-memo text-lg font-bold text-slate-950 mt-1">
-            MEMORANDUM: ${data.corridor} Micro-Grant Resilience Allocation
-          </h3>
-          <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-700 mt-2 font-mono-code">
-            <div><strong>CORRIDOR:</strong> ${data.corridor} (${data.corridor_meta.businesses} storefronts)</div>
-            <div><strong>FUND BUDGET:</strong> $${data.budget.toLocaleString()} (${data.split_mode})</div>
-            <div><strong>TRAVERSAL:</strong> GQL 2-Hop (${data.track})</div>
-            <div><strong>PROTECTED REACH:</strong> ${c.unique_hop1_count} Hop-1 + ${c.unique_hop2_count} Hop-2 Nodes</div>
-          </div>
-        </div>
-
-        <!-- 1. Which business & how much -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1.5">
-            1. Recommended Grant Allocation (Named Recipient, Address &amp; Amount)
-          </h4>
-          <div class="space-y-2">${allocHtml}</div>
-        </div>
-
-        <!-- 2. What it protects -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1">
-            2. What This Protects Downstream (${c.total_downstream_protected} Businesses &amp; ${c.total_footfall_workers_linked.toLocaleString()} Linked Block Workers)
-          </h4>
-          <div class="text-[11px] text-slate-800">
-            <div class="font-semibold text-slate-900 mt-1">Hop-1 Direct Buyers (<code>-[:Supplies]-&gt;{1}</code>):</div>
-            <ul class="list-disc pl-4">${hop1Html || '<li>None (Leaf storefront)</li>'}</ul>
-            <div class="font-semibold text-slate-900 mt-2">Hop-2 Indirect Cascade (<code>-[:Supplies]-&gt;{2}</code> — Never Bought Directly from Seed):</div>
-            <ul class="list-disc pl-4">${hop2Html || '<li>None</li>'}</ul>
-          </div>
-        </div>
-
-        <!-- 3. The traversal itself, shown -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1">
-            3. Verbatim BigQuery GQL Traversal Executed
-          </h4>
-          <pre class="p-2.5 rounded bg-slate-900 text-emerald-300 font-mono-code text-[10.5px] overflow-x-auto">${c.gql_query}</pre>
-        </div>
-
-        <!-- 4. Why this one and not the runner-up or biggest hub -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1">
-            4. Comparative Defense: Why Primary Pick vs. Runner-Up &amp; Why Not the Biggest Hub
-          </h4>
-          <p class="text-[11px] text-slate-800">
-            <strong>Vs. Runner-Up (${r.name}):</strong> Primary pick <strong>${p.name}</strong> protects <strong>${p.exposed_2hop} vs. ${r.exposed_2hop}</strong> 2-hop businesses at higher technical input intensity (<strong>${(p.mean_intensity * 100).toFixed(2)}¢/$</strong> vs. ${(r.mean_intensity * 100).toFixed(2)}¢/$) and carries active SBA 7(a) forbearance distress (<code>${p.distress_score}</code>). Co-funding both under our split portfolio shields shared Hop-1 caterer <strong>Kearny Kitchen</strong> from a dual upstream failure.<br/>
-            <strong>Why We Reject the Largest Hub (${h.name}, 38 edges):</strong> Centrality is not vulnerability. ${h.name}'s SBA 7(a) loan is <strong>Paid In Full (PIF)</strong>, distress is low (<code>${h.distress_score}</code>), and its commercial printing inputs (1.4¢/$) are easily replaced outside the corridor.
-          </p>
-        </div>
-
-        <!-- 5. What we are assuming -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1">
-            5. Explicit Assumptions &amp; Probability Sensitivity (&Delta;P)
-          </h4>
-          <p class="text-[11px] text-slate-800">
-            Public data has no commercial rent arrears or per-storefront employee counts. We explicitly assume the grant reduces 90-day closure probability from <strong>P₀ = 0.66</strong> to <strong>P₁ = 0.18 (&Delta;P = -0.48)</strong>, protecting <strong>6.7 expected cascade-weighted businesses</strong>. If landlord non-renewal cuts effectiveness to <strong>&Delta;P = -0.20</strong> (2.8 businesses), reallocating 100% to <strong>${r.name}</strong> (&Delta;P = -0.36 &rarr; 3.2 businesses) becomes optimal.
-          </p>
-        </div>
-
-        <!-- 6. Which parts are real vs modeled -->
-        <div class="p-2.5 rounded bg-amber-50 border border-amber-300 text-[11px] text-slate-900">
-          <strong class="uppercase text-[10px] tracking-wider text-amber-900 block mb-0.5">6. Honest Evidence Provenance (Real vs. Modeled)</strong>
-          <strong>REAL:</strong> SF registered storefronts (DataSF PDDL), SBA 7(a) FOIA loans &amp; charge-offs (<code>CHGOFF</code>), LEHD block worker totals, and ACS tract demographics.
-          <strong>MODELED:</strong> Specific <code>Supplies</code> pairings (published BEA Direct Requirements industry rates assigned within 1,200m walking distance) and <code>DrawsFootfall</code> allocations (&le;500m).
-        </div>
-
-        <!-- 7. Who the neighborhood is & equity audit -->
-        <div>
-          <h4 class="font-bold uppercase tracking-wider text-[11px] text-slate-800 mb-1">
-            7. Neighborhood Demographics &amp; Mechanical Industry Bias Audit
-          </h4>
-          <p class="text-[11px] text-slate-800">
-            <strong>Tract ${p.tract}:</strong> Poverty Rate <strong>${(p.tract_poverty_rate * 100).toFixed(1)}%</strong> (Corridor avg: ${(eq.corridor_poverty_rate * 100).toFixed(1)}%), Car-Free Households: <strong>${(p.tract_no_vehicle_rate * 100).toFixed(1)}%</strong>, Median Income: <strong>$${p.tract_median_income.toLocaleString()}</strong>.<br/>
-            <strong>Mechanical Bias Reported:</strong> BEA tables assign 78% of 2-hop cascades to food/beverage &amp; restaurants while personal services like <strong>${l.name}</strong> (distress <code>0.89</code>) have 0 supply edges. We recommend reserving 15% of relief for non-graph storefront services.
-          </p>
-        </div>
-      `;
-    }
-
-    async function copyMemoMarkdown() {
-      if (!currentState.lastPayload) return;
-      await navigator.clipboard.writeText(currentState.lastPayload.memo_markdown);
-      alert('Friday Grant Memo Markdown copied to clipboard!');
-    }
-
-    async function copyGql() {
-      if (!currentState.lastPayload) return;
-      await navigator.clipboard.writeText(currentState.lastPayload.cascade.gql_query);
-      alert('BigQuery GQL query copied to clipboard!');
-    }
-
-    function openIntakeModal() {
-      document.getElementById('intake-modal').classList.remove('hidden');
-    }
-
-    function closeIntakeModal() {
-      document.getElementById('intake-modal').classList.add('hidden');
-    }
-
-    async function submitIntakeEdge() {
-      const supplier_name = document.getElementById('intake-supplier').value;
-      const buyer_name = document.getElementById('intake-buyer').value;
-      const intensity_cents_per_dollar = Number(document.getElementById('intake-intensity').value);
-      const is_replaceable = document.getElementById('intake-replaceable').value === 'true';
-      const notes = document.getElementById('intake-notes').value;
-
-      const res = await fetch('/api/intake', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          corridor: currentState.corridor,
-          supplier_name,
-          buyer_name,
-          intensity_cents_per_dollar,
-          is_replaceable,
-          notes
-        })
-      });
-      const data = await res.json();
-      closeIntakeModal();
-      currentState.lastPayload = data.updated_analysis;
-      renderAll(data.updated_analysis);
-
-      const chatLog = document.getElementById('chat-log');
-      const div = document.createElement('div');
-      div.className = 'p-2.5 rounded-lg bg-amber-950/50 border border-amber-600/40 text-amber-200';
-      div.innerHTML = `<strong>Intake Agent Edge Added:</strong> ${data.intake_result.message}`;
-      chatLog.appendChild(div);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    function askPreset(q) {
-      document.getElementById('chat-input').value = q;
-      sendChatMessage(new Event('submit'));
-    }
-
-    async function sendChatMessage(e) {
-      e.preventDefault();
-      const input = document.getElementById('chat-input');
-      const message = input.value.trim();
-      if (!message) return;
-      input.value = '';
-
-      const chatLog = document.getElementById('chat-log');
-      const userDiv = document.createElement('div');
-      userDiv.className = 'p-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-right';
-      userDiv.innerHTML = `<span class="text-slate-400 text-[10px] block">Grant Officer</span>${message}`;
-      chatLog.appendChild(userDiv);
-      chatLog.scrollTop = chatLog.scrollHeight;
-
+    async function sendChat() {
+      const inp = document.getElementById('chatInput');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      inp.value = '';
+      const log = document.getElementById('chatLog');
+      log.innerHTML += `<div class="chat-msg"><b>Grant Officer:</b> ${msg}</div>`;
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          corridor: currentState.corridor,
-          budget: currentState.budget,
-          track: currentState.track,
-          split_mode: currentState.split_mode
-        })
+        body: JSON.stringify({ message: msg })
       });
       const data = await res.json();
-
-      const agentDiv = document.createElement('div');
-      agentDiv.className = 'p-2.5 rounded-lg bg-blue-950/40 border border-blue-800/40 text-slate-200 whitespace-pre-line leading-relaxed';
-      agentDiv.innerHTML = `<span class="text-blue-400 font-semibold text-[10px] block mb-0.5">ADK Agent (${data.engine})</span>` +
-        data.reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`(.*?)`/g, '<code class="font-mono-code text-emerald-300">$1</code>');
-      chatLog.appendChild(agentDiv);
-      chatLog.scrollTop = chatLog.scrollHeight;
+      const formatted = (data.reply || '').replace(/\n/g, '<br/>');
+      const routeBadge = data.sub_agent_routed
+        ? `${data.root_orchestrator || 'market_castro_grant_advisor'} &rarr; ${data.sub_agent_routed} · ${data.tool_called}`
+        : data.tool_called;
+      log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${routeBadge}</code>):</b><br/>${formatted}</div>`;
+      log.scrollTop = log.scrollHeight;
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      refreshAnalysis();
-    });
+    window.addEventListener('DOMContentLoaded', initDashboard);
   </script>
 </body>
 </html>
