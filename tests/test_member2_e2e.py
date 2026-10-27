@@ -482,6 +482,58 @@ class TestMember2Deliverables(unittest.TestCase):
         self.assertGreater(first_node["latitude"], 37.7)
         self.assertLess(first_node["longitude"], -122.4)
 
+    def test_13_member3_prd_ui_deliverables(self) -> None:
+        """
+        Verify Member 3's PRD Section 3.3, 4-Hour Execution Plan, and Video Storyboard
+        UI deliverables in `agent/static/market_castro_console.html` and `agent/agent.py`:
+          - 3-Minute Video Storyboard Guided Demo Bar (`demoStoryboardBar`, `runDemoSegment`)
+          - Print / PDF Friday Grant Committee Memo export (`@media print`, `window.print()`)
+          - Head-to-Head Candidate Comparator Card (`headToHeadCard`, `loadHeadToHeadComparison`)
+          - Naive Top-4 Ranked List Redundancy Audit Table (`naiveOverlapTableBody`)
+          - Interactive SVG Node Inspector & Red Dashed Virtual Mailbox Rings (`svgNodeInspector`, `selectCascadeNode`)
+          - Interactive Hygiene Filter Toggles (`chkExcludeVm`, `chkExcludeMonopoly`, `loadCandidatesWithFilters`)
+          - Full Equity Audit wiring (`loadFullEquityAudit`)
+          - Track 3 Two-Direction Flow Diagram & GQL Inspector (`anchorFlowDiagram`, `anchorGqlWrap`)
+          - +10 Bonus 1-Click Invoice Presets & Sub-Agent Routing Badge (`applyInvoicePreset`, `chatSubAgentBadge`, `sub_agent_routed`)
+        """
+        mc_html = (ROOT_DIR / "agent" / "static" / "market_castro_console.html").read_text(
+            encoding="utf-8"
+        )
+        required_ui_markers = [
+            'id="demoStoryboardBar"',
+            "runDemoSegment(1)",
+            "runDemoSegment(4)",
+            "@media print",
+            "window.print()",
+            'id="headToHeadCard"',
+            "loadHeadToHeadComparison()",
+            'id="naiveOverlapTableBody"',
+            'id="svgNodeInspector"',
+            "selectCascadeNode(",
+            "inspectCandidateInMemo(",
+            'id="chkExcludeVm"',
+            'id="chkExcludeMonopoly"',
+            "loadCandidatesWithFilters()",
+            "loadFullEquityAudit()",
+            'id="anchorFlowDiagram"',
+            'id="anchorGqlWrap"',
+            "applyInvoicePreset(",
+            'id="chatSubAgentBadge"',
+        ]
+        for marker in required_ui_markers:
+            self.assertIn(marker, mc_html, f"Missing Member 3 UI marker: {marker}")
+
+        # Verify sub_agent_routed and root_orchestrator telemetry on run_grant_officer_chat
+        chat_compare = run_grant_officer_chat("Why Theatre Rhinoceros over Cafe Du Nord?")
+        self.assertEqual(chat_compare["root_orchestrator"], "market_castro_grant_advisor")
+        self.assertEqual(chat_compare["sub_agent_routed"], "grant_portfolio_defender")
+
+        chat_audit = run_grant_officer_chat("Show virtual mailbox hubs and equity audit")
+        self.assertEqual(chat_audit["sub_agent_routed"], "equity_bias_auditor")
+
+        chat_shock = run_grant_officer_chat("Simulate anchor closure shock at Castro Station")
+        self.assertEqual(chat_shock["sub_agent_routed"], "graph_cascade_analyst")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

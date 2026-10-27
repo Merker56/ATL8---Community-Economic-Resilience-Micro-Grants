@@ -327,6 +327,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for t in res["sub_agent_traces"]
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "market_castro_grant_advisor",
             "tool_called": "run_end_to_end_workflow",
             "reply": (
                 f"### End-to-End 3-Sub-Agent Workflow Executed (`{res['workflow_id']}`, `{res['total_execution_ms']}ms`)\n"
@@ -347,6 +349,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             invoice_note=f"Live Grant Officer intake: {msg}",
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
             "tool_called": "add_verified_merchant_supplier",
             "reply": (
                 f"**Verified Merchant Supplier Edge Recorded (+10 Bonus Unlock):**\n"
@@ -375,6 +379,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for u in top_up
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "graph_cascade_analyst",
             "tool_called": "simulate_anchor_closure",
             "reply": (
                 f"### Track 3 Two-Direction Anchor Shock Simulation\n"
@@ -389,6 +395,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
     if any(k in low for k in ("bias", "equity", "mailbox", "2261", "duplicate", "sba", "charge", "artifact", "primo")):
         res = audit_corridor_equity_and_bias()
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "equity_bias_auditor",
             "tool_called": "audit_corridor_equity_and_bias",
             "reply": (
                 "### Market/Castro Structural Bias & Data Hygiene Audit\n"
@@ -410,6 +418,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             for s in res["selected_portfolio"]
         )
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "grant_portfolio_defender",
             "tool_called": "optimize_corridor_portfolio",
             "reply": (
                 f"### Subgraph-Deduplicated Grant Portfolio (`K={k_req}`, Pool `${res['budget_pool_usd']:,.0f}`)\n"
@@ -426,6 +436,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
         res = compare_grant_candidates("Theatre Rhinoceros", cand_b)
         ca, cb = res["candidate_a"], res["candidate_b"]
         return {
+            "root_orchestrator": "market_castro_grant_advisor",
+            "sub_agent_routed": "grant_portfolio_defender",
             "tool_called": "compare_grant_candidates",
             "reply": (
                 f"### Head-to-Head Committee Comparison: `{ca['name']}` vs. `{cb['name']}`\n"
@@ -447,6 +459,8 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
             break
     memo = generate_friday_grant_memo(business_query=target)
     return {
+        "root_orchestrator": "market_castro_grant_advisor",
+        "sub_agent_routed": "grant_portfolio_defender",
         "tool_called": "generate_friday_grant_memo",
         "reply": (
             f"### 7-Part Friday Grant Committee Memo — `{memo['recommended_business_name']}` ({memo['recommended_address']})\n"

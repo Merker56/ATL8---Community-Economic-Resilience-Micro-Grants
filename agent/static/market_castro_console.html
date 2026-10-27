@@ -319,6 +319,51 @@
     }
     .chat-msg { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #1e293b; }
     .chat-msg b { color: var(--accent); }
+    .clickable-row { cursor: pointer; transition: background 0.12s ease; }
+    .clickable-row:hover td { background: rgba(56, 189, 248, 0.14) !important; }
+    .selected-row td { background: rgba(16, 185, 129, 0.18) !important; border-color: var(--emerald); }
+    .storyboard-bar {
+      background: rgba(18, 26, 48, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .storyboard-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .sb-btn {
+      background: var(--bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 11px;
+      font-size: 11.8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .sb-btn:hover, .sb-btn.active {
+      background: rgba(56, 189, 248, 0.16);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      header, .controls-bar, .tabs, .storyboard-bar, #demoCueBanner, .no-print { display: none !important; }
+      .container { max-width: 100% !important; padding: 0 !important; }
+      .split-grid { grid-template-columns: 1fr !important; }
+      .card { background: #ffffff !important; color: #000000 !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
+      .memo-part { background: #f8fafc !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; }
+      .part-body { color: #0f172a !important; }
+    }
   </style>
 </head>
 <body>
@@ -342,6 +387,7 @@
           <a href="/grant-officer" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;border-color:#38bdf8;color:#38bdf8;">
             🌐 10-Corridor SF Console (/grant-officer) &rarr;
           </a>
+          <button class="btn-secondary" onclick="window.print()">🖨️ Print / PDF Friday Memo</button>
           <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Preset ($25k + $25k)</button>
         </div>
       </div>
@@ -375,6 +421,21 @@
   </header>
 
   <div class="container">
+    <!-- 3-Minute Video Demo Storyboard Bar (docs/PITCH_DECK_AND_VIDEO_SCRIPT.md) -->
+    <div class="storyboard-bar" id="demoStoryboardBar">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="tag tag-verified">🎬 3-Min Demo Storyboard</span>
+        <span style="font-size:12px;color:var(--muted);">1-Click Presenter Walkthrough (`docs/PITCH_DECK_AND_VIDEO_SCRIPT.md`):</span>
+      </div>
+      <div class="storyboard-steps">
+        <button class="sb-btn" id="btnSb1" onclick="runDemoSegment(1)">0:00–0:35 · 1. Hook &amp; Corridor KPIs</button>
+        <button class="sb-btn" id="btnSb2" onclick="runDemoSegment(2)">0:35–1:25 · 2. GQL &amp; Hygiene Traps (2261 Market / Primo)</button>
+        <button class="sb-btn" id="btnSb3" onclick="runDemoSegment(3)">1:25–2:20 · 3. 7-Part Memo &amp; 0% Overlap Portfolio</button>
+        <button class="sb-btn" id="btnSb4" onclick="runDemoSegment(4)">2:20–3:00 · 4. Track 3 Shock &amp; +10 Bonus Invoice Loop</button>
+      </div>
+    </div>
+    <div id="demoCueBanner" class="memo-part purple" style="display:none;margin-bottom:14px;"></div>
+
     <!-- Interactive Parameter Controls -->
     <div class="controls-bar">
       <div class="ctrl-group">
@@ -395,6 +456,7 @@
           <option value="Canela">Canela (2272 Market St · 9 Direct Buyers)</option>
           <option value="Leadbetters Bake Shop">Leadbetters Bake Shop (554 Castro St · 500-Block Anchor)</option>
           <option value="Theatre Rhinoceros">Theatre Rhinoceros (4229 18th St · Cultural Keystone)</option>
+          <option value="Primo">[Artifact] Primo (4201 18th St · Sole NAICS 3121 Monopoly)</option>
         </select>
       </div>
       <div class="ctrl-group">
@@ -427,45 +489,56 @@
     <!-- TAB 1: 7-PART MEMO & CASCADE VISUALIZER -->
     <div id="tabMemo" class="tab-pane active">
       <div class="split-grid">
-        <!-- Left Column: The 7-Part Friday Committee Defense Memo -->
-        <div class="card">
-          <h2>
-            <span>Friday Grant Committee Defense Memo (All 7 Rubric Sections)</span>
-            <span class="tag tag-hop1" id="memoHeaderBadge">Keystone Band: 12 Exposed</span>
-          </h2>
-          <div class="part-grid">
-            <div class="memo-part good">
-              <div class="part-title">Part 1 · Which Business (By Name & Address) and How Much</div>
-              <div class="part-body" id="part1Body">Loading...</div>
+        <!-- Left Column: The 7-Part Friday Committee Defense Memo + Head-to-Head Comparator -->
+        <div>
+          <div class="card">
+            <h2>
+              <span>Friday Grant Committee Defense Memo (All 7 Rubric Sections)</span>
+              <span class="tag tag-hop1" id="memoHeaderBadge">Keystone Band: 12 Exposed</span>
+            </h2>
+            <div class="part-grid">
+              <div class="memo-part good">
+                <div class="part-title">Part 1 · Which Business (By Name & Address) and How Much</div>
+                <div class="part-body" id="part1Body">Loading...</div>
+              </div>
+              <div class="memo-part">
+                <div class="part-title">Part 2 · What It Protects (Concrete 1-to-2 Hop Cascade & Jobs)</div>
+                <div class="part-body" id="part2Body">Loading...</div>
+              </div>
+              <div class="memo-part purple">
+                <div class="part-title">Part 3 · Graph Traversal Shown (`ANY SHORTEST` + `TO_JSON(p)`)</div>
+                <div class="part-body" id="part3Body">Loading...</div>
+              </div>
+              <div class="memo-part warn">
+                <div class="part-title">Part 4 · Why This One — And NOT the Runner-Up or Raw Centrality Hub</div>
+                <div class="part-body" id="part4Body">Loading...</div>
+              </div>
+              <div class="memo-part good">
+                <div class="part-title">Part 5 · Explicit Assumptions (Survival Probability Shift ΔP, Not Certainty)</div>
+                <div class="part-body" id="part5Body">Loading...</div>
+              </div>
+              <div class="memo-part warn">
+                <div class="part-title">Part 6 · Honest Line: Which Evidence Is REAL vs. MODELED</div>
+                <div class="part-body" id="part6Body">Loading...</div>
+              </div>
+              <div class="memo-part">
+                <div class="part-title">Part 7 · Who Lives Around It (ACS Census Tract `LPAD(geo_id, 11, '0')`)</div>
+                <div class="part-body" id="part7Body">Loading...</div>
+              </div>
             </div>
-            <div class="memo-part">
-              <div class="part-title">Part 2 · What It Protects (Concrete 1-to-2 Hop Cascade & Jobs)</div>
-              <div class="part-body" id="part2Body">Loading...</div>
-            </div>
-            <div class="memo-part purple">
-              <div class="part-title">Part 3 · Graph Traversal Shown (`ANY SHORTEST` + `TO_JSON(p)`)</div>
-              <div class="part-body" id="part3Body">Loading...</div>
-            </div>
-            <div class="memo-part warn">
-              <div class="part-title">Part 4 · Why This One — And NOT the Runner-Up or Raw Centrality Hub</div>
-              <div class="part-body" id="part4Body">Loading...</div>
-            </div>
-            <div class="memo-part good">
-              <div class="part-title">Part 5 · Explicit Assumptions (Survival Probability Shift ΔP, Not Certainty)</div>
-              <div class="part-body" id="part5Body">Loading...</div>
-            </div>
-            <div class="memo-part warn">
-              <div class="part-title">Part 6 · Honest Line: Which Evidence Is REAL vs. MODELED</div>
-              <div class="part-body" id="part6Body">Loading...</div>
-            </div>
-            <div class="memo-part">
-              <div class="part-title">Part 7 · Who Lives Around It (ACS Census Tract `LPAD(geo_id, 11, '0')`)</div>
-              <div class="part-body" id="part7Body">Loading...</div>
-            </div>
+          </div>
+
+          <!-- Head-to-Head Candidate Comparison Card (GET /api/compare) -->
+          <div class="card" id="headToHeadCard">
+            <h2>
+              <span>Head-to-Head Candidate Comparator (<code>GET /api/compare</code>)</span>
+              <span class="tag tag-hop2" id="h2hVerdictBadge">Primary vs. Runner-Up</span>
+            </h2>
+            <div id="headToHeadBody" style="font-size:12.6px;">Loading head-to-head comparison...</div>
           </div>
         </div>
 
-        <!-- Right Column: Interactive SVG Graph + Cascade Table + GQL / TO_JSON(p) Inspector -->
+        <!-- Right Column: Interactive SVG Graph + Cascade Table + Portfolio Optimizer + Naive Top-4 Overlap Audit -->
         <div>
           <div class="card">
             <h2>
@@ -479,11 +552,13 @@
             <div class="graph-canvas-wrap">
               <svg id="cascadeSvg" viewBox="0 0 680 420"></svg>
               <div id="leafletMap" style="display:none; width:100%; height:100%; z-index:1;"></div>
+              <div id="svgNodeInspector" style="display:none; position:absolute; top:10px; right:12px; background:rgba(11,16,32,0.94); border:1px solid var(--accent); border-radius:7px; padding:8px 11px; font-size:11.8px; max-width:270px; z-index:15;"></div>
               <div class="graph-legend" style="z-index:10;">
                 <span><i class="dot" style="background:#f59e0b"></i>Focal Grant Recipient</span>
-                <span><i class="dot" style="background:#10b981"></i>Hop 1 Direct Buyer</span>
-                <span><i class="dot" style="background:#38bdf8"></i>Hop 2 Indirect Buyer</span>
-                <span><i class="dot" style="background:#f43f5e"></i>Virtual Mailbox / Flagged</span>
+                <span><i class="dot" style="background:#10b981"></i>Hop 1 Physical Buyer</span>
+                <span><i class="dot" style="background:#38bdf8"></i>Hop 2 Physical Buyer</span>
+                <span><i class="dot" style="background:#f43f5e;border:1.5px dashed #fff"></i>Virtual Mailbox Trap</span>
+                <span><i class="dot" style="background:#fbbf24"></i>★ Merchant-Verified Edge</span>
               </div>
             </div>
             <div id="gqlInspectorWrap" style="display:none; margin-top:12px;">
@@ -495,7 +570,10 @@
           </div>
 
           <div class="card">
-            <h2><span>Downstream Businesses Protected (Hop 1 & Hop 2 Cascade Paths)</span></h2>
+            <h2>
+              <span>Downstream Businesses Protected (Hop 1 & Hop 2 Cascade Paths)</span>
+              <span style="font-size:11.5px;color:var(--muted);font-weight:400;">Click any row or SVG node to highlight</span>
+            </h2>
             <div style="max-height: 250px; overflow-y: auto;">
               <table>
                 <thead>
@@ -531,6 +609,7 @@
               </div>
             </h2>
             <div id="portfolioGuidanceBox" style="font-size:12.2px; color:var(--muted); margin-bottom:8px;"></div>
+            <div style="font-size:11.8px;font-weight:700;color:var(--emerald);margin:6px 0 4px;">A. Greedy Subgraph-Deduplicated Portfolio (Click Row to Inspect in Memo)</div>
             <table>
               <thead>
                 <tr>
@@ -544,6 +623,23 @@
               </thead>
               <tbody id="portfolioTableBody"></tbody>
             </table>
+
+            <div style="font-size:11.8px;font-weight:700;color:var(--accent-2);margin:14px 0 4px;">
+              B. Why Not Naive Top-4 Ranked List? Subgraph Redundancy Audit (<code>naive_top4_overlap_audit</code>)
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Naive Rank</th>
+                  <th>Candidate Business</th>
+                  <th>Raw 2-Hop</th>
+                  <th>Already Protected</th>
+                  <th>Subgraph Redundancy</th>
+                  <th>Portfolio Verdict</th>
+                </tr>
+              </thead>
+              <tbody id="naiveOverlapTableBody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -553,11 +649,23 @@
     <div id="tabHygiene" class="tab-pane">
       <div class="split-grid">
         <div class="card">
-          <h2><span>Actionable Storefront Keystone Band (3–35 Reach) vs. Disqualified Centrality Traps</span></h2>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+            <h2 style="margin:0;"><span>Actionable Storefront Keystone Band (3–35 Reach) vs. Disqualified Centrality Traps</span></h2>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;background:var(--panel-alt);padding:6px 10px;border-radius:6px;border:1px solid var(--border);">
+              <label style="cursor:pointer;display:flex;align-items:center;gap:5px;">
+                <input type="checkbox" id="chkExcludeVm" checked onchange="loadCandidatesWithFilters()" />
+                <span>Exclude Virtual Mailboxes (<code>2261 Market</code> / <code>584 Castro</code>)</span>
+              </label>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:5px;">
+                <input type="checkbox" id="chkExcludeMonopoly" checked onchange="loadCandidatesWithFilters()" />
+                <span>Exclude BEA Monopoly Artifacts (<code>Primo</code> NAICS 3121)</span>
+              </label>
+            </div>
+          </div>
           <p style="font-size:13px; color:var(--muted); margin-top:0;">
-            Section 11 & Section 13 Proof: Why our agent does NOT pick raw degree centrality winners (`Echo Chunk` at `2261 Market St` or `Primo` sole NAICS `3121`).
+            Section 11 &amp; Section 13 Proof: Toggle filters above to test naive degree centrality vs. hygiene-filtered Keystone Band. <b>Click any candidate row to load its 7-Part Defense Memo &amp; SVG Graph.</b>
           </p>
-          <h3 style="font-size:13px; color:var(--emerald);">A. Verified Brick-and-Mortar Keystone Band Candidates</h3>
+          <h3 style="font-size:13px; color:var(--emerald);">A. Verified Brick-and-Mortar Keystone Band Candidates (<code>GET /api/candidates</code>)</h3>
           <table>
             <thead>
               <tr>
@@ -568,6 +676,7 @@
                 <th>2-Hop Reach</th>
                 <th>1-Hop Intensity</th>
                 <th>Keystone Score</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="keystoneTableBody"></tbody>
@@ -581,6 +690,7 @@
                 <th>Address</th>
                 <th>Raw 2-Hop Reach</th>
                 <th>Disqualification Reason</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="trapTableBody"></tbody>
@@ -606,7 +716,7 @@
           </div>
 
           <div class="card">
-            <h2><span>Entity Resolution: Duplicate DBA Tax Registrations & SBA 7(a) Charge-Offs</span></h2>
+            <h2><span>Virtual Mailbox Hubs (`2261 Market St`), Duplicate DBAs &amp; SBA 7(a) Charge-Offs (<code>GET /api/equity-audit</code>)</span></h2>
             <div id="hygieneDetailsBox" style="font-size:13px;"></div>
           </div>
         </div>
@@ -623,14 +733,20 @@
               Traverses `(anchor:EmployerBlock)&lt;-[df:DrawsFootfall]-(b1:Business)&lt;-[s:Supplies]-(upstream:Business)` to identify both direct foot-traffic losses and second-order supplier losses.
             </p>
           </div>
-          <div style="min-width:340px;">
-            <select id="selAnchorBlock" onchange="loadAnchorShock()" style="width:100%; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:9px; border-radius:6px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="selAnchorBlock" onchange="loadAnchorShock()" style="min-width:340px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:9px; border-radius:6px;">
               <option value="060750171011001">Block 060750171011001 (Castro & Market / 400-500 Castro Anchor · 785 Jobs)</option>
               <option value="060750171011003">Block 060750171011003 (18th & Castro Cultural Strip · 512 Jobs)</option>
               <option value="060750202011002">Block 060750202011002 (Church & Market / 2100 Market Hub · 690 Jobs)</option>
               <option value="060750169001001">Block 060750169001001 (Upper Market 2200-2300 Strip · 642 Jobs)</option>
             </select>
+            <button class="btn-secondary" onclick="toggleAnchorGql()">Inspect Track 3 GQL</button>
           </div>
+        </div>
+        <div id="anchorFlowDiagram" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:12px;"></div>
+        <div id="anchorGqlWrap" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">Track 3 Two-Direction BigQuery GQL Query (<code>sql/02_gql_cascade_queries.sql</code>):</div>
+          <div class="code-box" id="anchorGqlBox"></div>
         </div>
         <div id="anchorNarrative" class="memo-part warn" style="margin-bottom:14px;"></div>
         <div class="split-grid">
@@ -681,6 +797,14 @@
             When a merchant applies for a micro-grant and names their real local suppliers, this tool upgrades the edge to
             <b>Merchant-Verified Ground Truth (`is_verified=true`)</b> and recomputes the corridor cascade live.
           </p>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">1-Click Demo Invoice Presets:</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn-secondary" onclick="applyInvoicePreset('Theatre Rhinoceros','The Castro',0.42,'Co-production & ticketing invoice #TR-2026-09 verified during Friday intake')">Preset 1: Theatre Rhinoceros &rarr; The Castro (0.42)</button>
+              <button class="btn-secondary" onclick="applyInvoicePreset('Canela','Mudpuppy\'s Tub & Scrub',0.35,'Local hospitality catering & event voucher invoice #CN-2026-14')">Preset 2: Canela &rarr; Mudpuppy's (0.35)</button>
+              <button class="btn-secondary" onclick="applyInvoicePreset('Leadbetters Bake Shop','Cafe Du Nord',0.30,'Weekly wholesale baked goods invoice #LB-2026-04')">Preset 3: Leadbetters &rarr; Cafe Du Nord (0.30)</button>
+            </div>
+          </div>
           <div style="display:grid; gap:10px; margin-bottom:14px;">
             <div class="ctrl-group">
               <label><span>Upstream Local Supplier (Market/Castro)</span></label>
@@ -708,7 +832,10 @@
         </div>
 
         <div class="card">
-          <h2><span>Interactive ADK Grant Defense Agent Q&A</span></h2>
+          <h2>
+            <span>Interactive ADK Grant Defense Agent Q&A</span>
+            <span class="tag tag-hop2" id="chatSubAgentBadge">Router: market_castro_grant_advisor</span>
+          </h2>
           <p style="font-size:13px; color:var(--muted); margin-top:0;">
             Ask committee challenge questions (e.g., <i>"Compare Theatre Rhinoceros vs Canela"</i>, <i>"Why not fund Primo or Echo Chunk at 2261 Market St?"</i>, or <i>"Simulate Castro Station anchor closure"</i>).
           </p>
@@ -721,6 +848,7 @@
             <button class="btn-secondary" onclick="sendQuickChat('Why should we fund Theatre Rhinoceros over Cafe Du Nord or Canela?')">Compare vs. Cafe Du Nord & Canela</button>
             <button class="btn-secondary" onclick="sendQuickChat('Audit virtual mailbox bias at 2261 Market St and Primo monopoly')">Why Not Raw Centrality Winner?</button>
             <button class="btn-secondary" onclick="sendQuickChat('What happens if the Castro Station employer block closes?')">Simulate Anchor Block Shock</button>
+            <button class="btn-secondary" onclick="sendQuickChat('Run the end-to-end multi-agent workflow')">Run 3-Sub-Agent Workflow</button>
           </div>
           <div style="display:flex; gap:8px;">
             <input type="text" id="chatInput" placeholder="Ask the Market/Castro ADK Agent..." style="flex:1; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:9px;" onkeydown="if(event.key==='Enter') sendChat()" />
@@ -787,14 +915,66 @@
     let graphViewMode = 'radial';
     let leafletMapInstance = null;
     let leafletLayerGroup = null;
+    let selectedCascadeBizId = null;
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      if (btn) btn.classList.add('active');
+      const pane = document.getElementById(tabId);
+      if (pane) pane.classList.add('active');
+      if (btn) {
+        btn.classList.add('active');
+      } else {
+        const idxMap = { tabMemo: 0, tabHygiene: 1, tabAnchor: 2, tabIntake: 3, tabWorkflow: 4 };
+        const btns = document.querySelectorAll('.tab-btn');
+        if (idxMap[tabId] !== undefined && btns[idxMap[tabId]]) {
+          btns[idxMap[tabId]].classList.add('active');
+        }
+      }
       if (tabId === 'tabMemo' && graphViewMode === 'map' && leafletMapInstance) {
         setTimeout(() => leafletMapInstance.invalidateSize(), 60);
+      }
+    }
+
+    function runDemoSegment(seg) {
+      for (let i = 1; i <= 4; i++) {
+        const b = document.getElementById(`demoBtn${i}`);
+        if (b) {
+          b.style.borderColor = i === seg ? 'var(--accent)' : 'var(--border)';
+          b.style.color = i === seg ? 'var(--accent)' : 'var(--text)';
+        }
+      }
+      const cue = document.getElementById('demoCueBanner');
+      if (seg === 1) {
+        switchTab('tabHygiene');
+        if (cue) {
+          cue.style.display = 'block';
+          cue.innerHTML = `🎬 <b>Segment 1 (0:00–0:40) — The Problem & Naive Centrality Trap:</b> Showing why raw degree centrality fails in Market/Castro: <b>2261 Market St</b> hides <b>140 virtual mailbox PMBs</b>, and <b>Anchor Brewing (ID 150223)</b> has 73 mechanical NAICS 3121 links with <b>0 corridor peers</b>. Filtering to the 3–35 Keystone Band surfaces <b>Theatre Rhinoceros</b> and <b>Cafe Du Nord</b>.`;
+        }
+      } else if (seg === 2) {
+        switchTab('tabMemo');
+        resetDefaults();
+        const wrap = document.getElementById('gqlInspectorWrap');
+        if (wrap) wrap.style.display = 'block';
+        if (cue) {
+          cue.style.display = 'block';
+          cue.innerHTML = `🎬 <b>Segment 2 (0:40–1:30) — BigQuery Property Graph & 2-Hop Cascade Discovery:</b> Inspecting live <code>GRAPH a4i_econ.LocalEconomy</code> <code>ANY SHORTEST</code> path traversal and <code>TO_JSON(p)</code> output for <b>Theatre Rhinoceros (ID 139704)</b> &rarr; <b>5 direct 1-hop buyers</b> &rarr; <b>20 indirect 2-hop buyers</b> (<b>25 total exposed nodes</b>, <b>11 verified physical storefronts</b>).`;
+        }
+      } else if (seg === 3) {
+        switchTab('tabMemo');
+        loadPortfolio();
+        loadHeadToHeadComparison();
+        if (cue) {
+          cue.style.display = 'block';
+          cue.innerHTML = `🎬 <b>Segment 3 (1:30–2:20) — Google ADK Multi-Agent Debate & Friday Grant Memo Defense:</b> Comparing <b>Theatre Rhinoceros</b> vs. <b>Cafe Du Nord</b> head-to-head and showing why <b>#3 The Castro (91.7% redundant)</b> and <b>#4 Hi Tops (100% redundant)</b> are skipped in favor of <b>#2 Canela (0% overlap)</b>.`;
+        }
+      } else if (seg === 4) {
+        switchTab('tabIntake');
+        applyInvoicePreset('Theatre Rhinoceros', 'The Castro', 0.42, 'Verified Q1 2026 stage production & event cross-ticketing invoice ($18,400)');
+        if (cue) {
+          cue.style.display = 'block';
+          cue.innerHTML = `🎬 <b>Segment 4 (2:20–3:00) — Track 3 Anchor Shock & +10 Bonus Live Merchant Supplier Intake:</b> Ready to submit a verified invoice upgrading a modeled BEA Make-Use edge to <code>MERCHANT_VERIFIED</code> ground truth and emitting a BigQuery <code>MERGE a4i_econ.supplies</code> DML statement.`;
+        }
       }
     }
 
@@ -827,6 +1007,11 @@
       wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
     }
 
+    function toggleAnchorGql() {
+      const wrap = document.getElementById('anchorGqlWrap');
+      if (wrap) wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    }
+
     function resetDefaults() {
       document.getElementById('selPrimary').value = 'Theatre Rhinoceros';
       document.getElementById('selRunnerUp').value = 'Cafe Du Nord';
@@ -837,9 +1022,42 @@
       refreshMemo();
     }
 
+    function populateCandidateAndAnchorDropdowns(ov) {
+      const cands = ov?.discovery?.actionable_keystone_candidates || [];
+      if (cands.length > 0) {
+        const selP = document.getElementById('selPrimary');
+        const selR = document.getElementById('selRunnerUp');
+        const curP = selP?.value || 'Theatre Rhinoceros';
+        const curR = selR?.value || 'Cafe Du Nord';
+        const optsHtml = cands.map(c =>
+          `<option value="${c.name}">${c.name} (${c.address} — NAICS ${c.naics4} · Reach ${c.total_2hop_exposed_count} · Score ${c.actionable_keystone_score})</option>`
+        ).join('');
+        if (selP) {
+          selP.innerHTML = optsHtml;
+          selP.value = cands.some(c => c.name === curP) ? curP : cands[0].name;
+        }
+        if (selR) {
+          selR.innerHTML = optsHtml;
+          selR.value = cands.some(c => c.name === curR) ? curR : (cands[1]?.name || cands[0].name);
+        }
+      }
+      const blocks = ov?.employer_blocks || [];
+      if (blocks.length > 0) {
+        const selBlk = document.getElementById('selAnchorBlock');
+        const curBlk = selBlk?.value || '060750171011001';
+        if (selBlk) {
+          selBlk.innerHTML = blocks.map(b =>
+            `<option value="${b.block_id}">Block ${b.block_id} — ${Number(b.jobs).toLocaleString()} Jobs (${b.sector_note || 'Corridor Employer'} · Tract ${b.tract})</option>`
+          ).join('');
+          selBlk.value = blocks.some(b => b.block_id === curBlk) ? curBlk : blocks[0].block_id;
+        }
+      }
+    }
+
     async function initDashboard() {
       const res = await fetch('/api/overview');
       overviewData = await res.json();
+      populateCandidateAndAnchorDropdowns(overviewData);
       renderMemo(overviewData.default_memo);
       renderHygieneAndEquity(overviewData.discovery, overviewData.audit_highlights);
       if (overviewData.default_portfolio) {
@@ -852,6 +1070,8 @@
       } else {
         runWorkflowPipeline();
       }
+      loadHeadToHeadComparison();
+      loadFullEquityAudit();
       loadHealthTelemetry();
       loadAnchorShock();
     }
@@ -869,10 +1089,11 @@
         ? `<div style="color:var(--rose);margin-top:4px;"><b>⚠️ Dilution Warning:</b> ${p.dilution_warnings.join(' ')}</div>`
         : `<div style="color:var(--emerald);margin-top:4px;">✓ All grants meet the $${p.min_effective_grant_usd.toLocaleString()} minimum survival runway floor. Total unique physical storefronts protected: <b>${p.total_unique_physical_storefronts_protected}</b> (${p.total_unique_2hop_nodes_protected} total 2-hop nodes).</div>`;
       document.getElementById('portfolioGuidanceBox').innerHTML = `<div>${p.committee_guidance}</div>${warnHtml}`;
+      const selectedIds = new Set((p.selected_portfolio || []).map(s => s.business_id));
       document.getElementById('portfolioTableBody').innerHTML = (p.selected_portfolio || []).map(s => `
-        <tr>
+        <tr style="cursor:pointer;" onclick="inspectCandidateInMemo('${s.name.replace(/'/g, "\\'")}')">
           <td><span class="tag tag-hop1">#${s.slot}</span></td>
-          <td><b>${s.name}</b><br/><span style="font-size:11px;color:var(--muted)">${s.address} · NAICS ${s.naics4}</span></td>
+          <td><b>${s.name}</b><br/><span style="font-size:11px;color:var(--muted)">${s.address} · NAICS ${s.naics4} (click to load in Memo)</span></td>
           <td style="font-family:var(--mono)">${s.marginal_keystone_score}</td>
           <td style="font-family:var(--mono);color:var(--emerald)"><b>+${s.new_unique_physical_added}</b> (cum ${s.cumulative_unique_physical_protected})</td>
           <td style="font-family:var(--mono)">${s.subgraph_redundancy_pct}%</td>
@@ -881,6 +1102,91 @@
           </td>
         </tr>
       `).join('');
+
+      const overlapTbody = document.getElementById('naiveOverlapTableBody');
+      if (overlapTbody) {
+        overlapTbody.innerHTML = (p.naive_top4_overlap_audit || []).map(a => {
+          const isRedundant = a.subgraph_redundancy_pct >= 50.0;
+          const isSelected = selectedIds.has(a.business_id);
+          return `
+            <tr style="cursor:pointer;" onclick="inspectCandidateInMemo('${a.name.replace(/'/g, "\\'")}')">
+              <td><span class="tag ${isRedundant ? 'tag-trap' : 'tag-hop1'}">Rank #${a.rank}</span></td>
+              <td><b>${a.name}</b> (<code>${a.business_id}</code> · NAICS <code>${a.naics4}</code>)</td>
+              <td style="font-family:var(--mono)">${a.raw_2hop_reach} (${a.raw_physical_reach} physical)</td>
+              <td style="font-family:var(--mono);color:${a.new_unique_physical_added > 0 ? 'var(--emerald)' : 'var(--rose)'}"><b>+${a.new_unique_physical_added}</b> (+${a.new_unique_2hop_added} total)</td>
+              <td style="font-family:var(--mono);color:${isRedundant ? 'var(--rose)' : 'var(--emerald)'}"><b>${a.subgraph_redundancy_pct}%</b></td>
+              <td>
+                <span class="tag ${isSelected ? 'tag-hop1' : 'tag-trap'}">
+                  ${isSelected ? '✓ SELECTED (Non-Overlapping)' : `✗ SKIPPED (${a.subgraph_redundancy_pct}% Redundant)`}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    function inspectCandidateInMemo(candidateName) {
+      const selP = document.getElementById('selPrimary');
+      if (selP) {
+        const exists = Array.from(selP.options).some(o => o.value === candidateName);
+        if (!exists) {
+          const opt = document.createElement('option');
+          opt.value = candidateName;
+          opt.textContent = `${candidateName} (Selected from Table)`;
+          selP.appendChild(opt);
+        }
+        selP.value = candidateName;
+      }
+      switchTab('tabMemo');
+      refreshMemo();
+    }
+
+    async function loadHeadToHeadComparison() {
+      const a = document.getElementById('selPrimary')?.value || 'Theatre Rhinoceros';
+      const b = document.getElementById('selRunnerUp')?.value || 'Cafe Du Nord';
+      const grant = parseFloat(document.getElementById('rngGrant')?.value || 25000);
+      const pNo = parseFloat(document.getElementById('rngPFailNo')?.value || 0.65);
+      const pYes = parseFloat(document.getElementById('rngPFailYes')?.value || 0.15);
+      const qs = new URLSearchParams({ a, b, grant_amount: grant, p_fail_no_grant: pNo, p_fail_grant: pYes });
+      try {
+        const res = await fetch(`/api/compare?${qs.toString()}`);
+        const cmp = await res.json();
+        const ca = cmp.candidate_a;
+        const cb = cmp.candidate_b;
+        const badge = document.getElementById('compareLinkBadge');
+        if (badge) badge.textContent = cmp.direct_supply_link || 'Head-to-Head';
+        const body = document.getElementById('headToHeadBody');
+        if (body && ca && cb) {
+          body.innerHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+              <div style="background:var(--panel-alt); border:1px solid rgba(245,158,11,0.4); border-radius:8px; padding:10px;">
+                <div style="font-size:11px; color:var(--accent); font-weight:700; text-transform:uppercase;">★ Primary: ${ca.name} (<code>${ca.business_id}</code>)</div>
+                <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">${ca.address} · NAICS ${ca.naics4} (${ca.naics_label})</div>
+                <div style="font-size:12px; line-height:1.55;">
+                  • <b>1-Hop Reach / Intensity:</b> <code>${ca.direct_1hop_count}</code> buyers / <code>${ca.total_1hop_intensity}</code><br/>
+                  • <b>2-Hop Total / Physical:</b> <code>${ca.total_2hop_exposed_count}</code> nodes / <b><code>${ca.brick_and_mortar_exposed_count}</code> storefronts</b><br/>
+                  • <b>Expected Jobs Saved:</b> <span style="color:var(--emerald);font-weight:700;">${ca.expected_jobs_saved} jobs</span> (<b>$${Number(ca.cost_per_expected_job_usd).toLocaleString()}/job</b>)<br/>
+                  • <b>Tract <code>${ca.tract_geoid}</code>:</b> Poverty <b>${(ca.tract_poverty_rate * 100).toFixed(1)}%</b> · Need <code>${ca.tract_need_multiplier}x</code>
+                </div>
+              </div>
+              <div style="background:var(--panel-alt); border:1px solid rgba(56,189,248,0.4); border-radius:8px; padding:10px;">
+                <div style="font-size:11px; color:var(--accent-2); font-weight:700; text-transform:uppercase;">⚖️ Runner-Up: ${cb.name} (<code>${cb.business_id}</code>)</div>
+                <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">${cb.address} · NAICS ${cb.naics4} (${cb.naics_label})</div>
+                <div style="font-size:12px; line-height:1.55;">
+                  • <b>1-Hop Reach / Intensity:</b> <code>${cb.direct_1hop_count}</code> buyers / <code>${cb.total_1hop_intensity}</code><br/>
+                  • <b>2-Hop Total / Physical:</b> <code>${cb.total_2hop_exposed_count}</code> nodes / <b><code>${cb.brick_and_mortar_exposed_count}</code> storefronts</b><br/>
+                  • <b>Expected Jobs Saved:</b> <span style="color:var(--accent-2);font-weight:700;">${cb.expected_jobs_saved} jobs</span> (<b>$${Number(cb.cost_per_expected_job_usd).toLocaleString()}/job</b>)<br/>
+                  • <b>Tract <code>${cb.tract_geoid}</code>:</b> Poverty <b>${(cb.tract_poverty_rate * 100).toFixed(1)}%</b> · Need <code>${cb.tract_need_multiplier}x</code>
+                </div>
+              </div>
+            </div>
+            <div style="font-size:12px; background:rgba(16,185,129,0.08); border-left:3px solid var(--emerald); padding:8px 10px; border-radius:4px;">
+              <b>Committee Verdict:</b> ${cmp.committee_verdict}
+            </div>
+          `;
+        }
+      } catch (e) {}
     }
 
     async function refreshMemo() {
@@ -908,6 +1214,7 @@
       const res = await fetch(`/api/memo?${qs.toString()}`);
       const memo = await res.json();
       renderMemo(memo);
+      loadHeadToHeadComparison();
     }
 
     function renderMemo(m) {
@@ -973,7 +1280,6 @@
       setTimeout(() => leafletMapInstance.invalidateSize(), 50);
       leafletLayerGroup.clearLayers();
 
-      // Extract focal coordinates from TO_JSON(p) first path element or fallback
       let focalLat = 37.7614, focalLon = -122.4350;
       if (memo.to_json_paths && memo.to_json_paths.length > 0) {
         const el0 = memo.to_json_paths[0].elements?.[0]?.properties;
@@ -993,7 +1299,6 @@
         coordsById[n.business_id] = [lat, lon];
       });
 
-      // Draw edges
       nodes.forEach(n => {
         const targetLatLon = coordsById[n.business_id];
         const srcLatLon = n.hop === 1
@@ -1008,7 +1313,6 @@
         }).addTo(leafletLayerGroup);
       });
 
-      // Draw downstream markers
       nodes.forEach(n => {
         const [lat, lon] = coordsById[n.business_id];
         const fill = n.is_virtual_mailbox ? '#f43f5e' : (n.hop === 1 ? '#10b981' : '#38bdf8');
@@ -1023,7 +1327,6 @@
           .addTo(leafletLayerGroup);
       });
 
-      // Draw Focal recipient marker
       L.circleMarker([focalLat, focalLon], {
         radius: 12,
         fillColor: '#f59e0b',
@@ -1036,13 +1339,37 @@
         .openPopup();
     }
 
+    function selectCascadeNode(bizId) {
+      selectedCascadeBizId = bizId;
+      document.querySelectorAll('#cascadeTableBody tr').forEach(tr => {
+        if (tr.dataset.bizId === String(bizId)) {
+          tr.style.background = 'rgba(245, 158, 11, 0.16)';
+        } else {
+          tr.style.background = '';
+        }
+      });
+      const node = (currentMemo?.cascade_nodes || []).find(n => String(n.business_id) === String(bizId));
+      const box = document.getElementById('svgNodeInspector');
+      if (box && node) {
+        box.style.display = 'block';
+        box.innerHTML =
+          `<b>${node.name}</b> (<code>${node.business_id}</code> · Hop ${node.hop}) — ${node.address} · NAICS <code>${node.naics4}</code> (${node.naics_label}) · ` +
+          `Compounded Intensity: <code>${node.compounded_intensity}</code> · Distance: <code>${node.metres}m</code> · ` +
+          `Est. Jobs: <code>${node.estimated_jobs}</code> ` +
+          `${node.is_virtual_mailbox ? '<span class="tag tag-trap">⚠️ Virtual Mailbox PMB</span>' : '<span class="tag tag-hop1">✓ Brick-and-Mortar Storefront</span>'} ` +
+          `${node.is_verified_edge ? '<span class="tag tag-verified">★ Merchant-Verified Edge</span>' : ''}`;
+      }
+      if (currentMemo) renderCascadeSvg(currentMemo);
+    }
+
     function renderCascadeTable(nodes) {
       const tbody = document.getElementById('cascadeTableBody');
       tbody.innerHTML = nodes.map(n => `
-        <tr>
+        <tr data-biz-id="${n.business_id}" style="cursor:pointer;${String(selectedCascadeBizId) === String(n.business_id) ? 'background:rgba(245,158,11,0.16);' : ''}" onclick="selectCascadeNode('${n.business_id}')">
           <td>
             <span class="tag ${n.hop === 1 ? 'tag-hop1' : 'tag-hop2'}">Hop ${n.hop}</span>
-            ${n.is_verified_edge ? '<span class="tag tag-verified">VERIFIED</span>' : ''}
+            ${n.is_verified_edge ? '<span class="tag tag-verified">★ VERIFIED</span>' : ''}
+            ${n.is_virtual_mailbox ? '<span class="tag tag-trap" title="Virtual Mailbox PMB">PMB</span>' : ''}
           </td>
           <td><b>${n.name}</b><br/><span style="font-size:11px;color:var(--muted)">${n.naics_label}</span></td>
           <td>${n.address}</td>
@@ -1061,7 +1388,6 @@
       const hop2 = nodes.filter(n => n.hop === 2).slice(0, 14);
 
       let html = '';
-      // Guide rings
       html += `<circle cx="${cx}" cy="${cy}" r="105" fill="none" stroke="#1e293b" stroke-dasharray="4 4" />`;
       html += `<circle cx="${cx}" cy="${cy}" r="182" fill="none" stroke="#1e293b" stroke-dasharray="3 5" />`;
 
@@ -1084,7 +1410,6 @@
         };
       });
 
-      // Draw Hop 1 -> Hop 2 edges
       hop2Coords.forEach(h2 => {
         const via = hop1Coords[h2.node.via_business_id];
         const sx = via ? via.x : cx;
@@ -1092,32 +1417,39 @@
         html += `<line x1="${sx}" y1="${sy}" x2="${h2.x}" y2="${h2.y}" stroke="#0284c7" stroke-opacity="0.55" stroke-width="1.5" />`;
       });
 
-      // Draw Focal -> Hop 1 edges
       Object.values(hop1Coords).forEach(h1 => {
         const strokeColor = h1.node.is_verified_edge ? '#f59e0b' : '#10b981';
         const width = Math.max(2, Math.min(5.5, h1.node.edge_intensity * 26));
-        html += `<line x1="${cx}" y1="${cy}" x2="${h1.x}" y2="${h1.y}" stroke="${strokeColor}" stroke-opacity="0.85" stroke-width="${width}" />`;
+        html += `<line x1="${cx}" y1="${cy}" x2="${h1.x}" y2="${h1.y}" stroke="${strokeColor}" stroke-opacity="0.88" stroke-width="${width}" />`;
+        if (h1.node.is_verified_edge) {
+          const mx = (cx + h1.x) / 2;
+          const my = (cy + h1.y) / 2;
+          html += `<text x="${mx}" y="${my - 4}" text-anchor="middle" fill="#fde68a" font-weight="700" font-size="9">★ VERIFIED</text>`;
+        }
       });
 
-      // Draw Hop 2 nodes
       hop2Coords.forEach(h2 => {
+        const isSel = String(selectedCascadeBizId) === String(h2.node.business_id);
         const fill = h2.node.is_virtual_mailbox ? '#f43f5e' : '#38bdf8';
-        html += `<g>
+        html += `<g style="cursor:pointer;" onclick="selectCascadeNode('${h2.node.business_id}')">
+          ${h2.node.is_virtual_mailbox ? `<circle cx="${h2.x}" cy="${h2.y}" r="10.5" fill="none" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="3 2"/>` : ''}
+          ${isSel ? `<circle cx="${h2.x}" cy="${h2.y}" r="12" fill="none" stroke="#f59e0b" stroke-width="2.5"/>` : ''}
           <circle cx="${h2.x}" cy="${h2.y}" r="6.5" fill="${fill}" stroke="#0f172a" stroke-width="1.5"/>
           <text x="${h2.x}" y="${h2.y - 9}" text-anchor="middle" fill="#cbd5e1" font-size="9.5">${h2.node.name.slice(0, 18)}</text>
         </g>`;
       });
 
-      // Draw Hop 1 nodes
       Object.values(hop1Coords).forEach(h1 => {
+        const isSel = String(selectedCascadeBizId) === String(h1.node.business_id);
         const fill = h1.node.is_virtual_mailbox ? '#f43f5e' : '#10b981';
-        html += `<g>
+        html += `<g style="cursor:pointer;" onclick="selectCascadeNode('${h1.node.business_id}')">
+          ${h1.node.is_virtual_mailbox ? `<circle cx="${h1.x}" cy="${h1.y}" r="13.5" fill="none" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="3 2"/>` : ''}
+          ${isSel ? `<circle cx="${h1.x}" cy="${h1.y}" r="15" fill="none" stroke="#f59e0b" stroke-width="2.5"/>` : ''}
           <circle cx="${h1.x}" cy="${h1.y}" r="9" fill="${fill}" stroke="#0f172a" stroke-width="2"/>
           <text x="${h1.x}" y="${h1.y - 12}" text-anchor="middle" fill="#ecfdf5" font-weight="600" font-size="10.5">${h1.node.name.slice(0, 20)}</text>
         </g>`;
       });
 
-      // Draw Focal node
       html += `<g>
         <circle cx="${cx}" cy="${cy}" r="15" fill="#f59e0b" stroke="#fff" stroke-width="2.5"/>
         <text x="${cx}" y="${cy + 27}" text-anchor="middle" fill="#fde68a" font-weight="700" font-size="11.5">${memo.recommended_business_name}</text>
@@ -1126,17 +1458,26 @@
       svg.innerHTML = html;
     }
 
+    async function loadCandidatesWithFilters() {
+      const exVm = document.getElementById('chkExcludeVm')?.checked ?? true;
+      const exMono = document.getElementById('chkExcludeMonopoly')?.checked ?? true;
+      const res = await fetch(`/api/candidates?exclude_vm=${exVm}&exclude_monopoly=${exMono}&min_reach=3&max_reach=35&top_k=15`);
+      const discovery = await res.json();
+      renderHygieneAndEquity(discovery, overviewData?.audit_highlights || {});
+    }
+
     function renderHygieneAndEquity(discovery, audit) {
       const ktBody = document.getElementById('keystoneTableBody');
       ktBody.innerHTML = (discovery.actionable_keystone_candidates || []).map(c => `
         <tr>
-          <td><b>${c.name}</b></td>
+          <td><b>${c.name}</b> (<code>${c.business_id}</code>)</td>
           <td>${c.address}</td>
           <td><code>${c.naics4}</code> ${c.naics_label}</td>
           <td style="font-family:var(--mono)">${c.direct_1hop_count}</td>
           <td style="font-family:var(--mono)"><b>${c.total_2hop_exposed_count}</b></td>
           <td style="font-family:var(--mono)">${c.total_1hop_intensity}</td>
           <td style="font-family:var(--mono);color:var(--emerald)"><b>${c.actionable_keystone_score}</b></td>
+          <td><button class="btn-secondary" style="padding:4px 8px;font-size:11px;" onclick="inspectCandidateInMemo('${c.name.replace(/'/g, "\\'")}')">🔍 Inspect in Memo</button></td>
         </tr>
       `).join('');
 
@@ -1156,35 +1497,53 @@
         </tr>
       `).join('');
 
-      const tractBody = document.getElementById('tractTableBody');
-      tractBody.innerHTML = (audit.tracts || []).map(t => `
-        <tr>
-          <td style="font-family:var(--mono)"><b>${t.geo_id}</b></td>
-          <td style="font-family:var(--mono)">${t.businesses_in_tract}</td>
-          <td style="font-family:var(--mono)">$${t.median_income.toLocaleString()}</td>
-          <td style="font-family:var(--mono)">${(t.poverty_rate * 100).toFixed(1)}%</td>
-          <td style="font-family:var(--mono)">${(t.no_vehicle_rate * 100).toFixed(1)}%</td>
-          <td style="font-family:var(--mono);color:var(--accent)"><b>${t.relative_need_multiplier}x</b></td>
-        </tr>
-      `).join('');
+      if (audit && audit.tracts) {
+        const tractBody = document.getElementById('tractTableBody');
+        tractBody.innerHTML = (audit.tracts || []).map(t => `
+          <tr>
+            <td style="font-family:var(--mono)"><b>${t.geo_id}</b></td>
+            <td style="font-family:var(--mono)">${t.businesses_in_tract}</td>
+            <td style="font-family:var(--mono)">$${t.median_income.toLocaleString()}</td>
+            <td style="font-family:var(--mono)">${(t.poverty_rate * 100).toFixed(1)}%</td>
+            <td style="font-family:var(--mono)">${(t.no_vehicle_rate * 100).toFixed(1)}%</td>
+            <td style="font-family:var(--mono);color:var(--accent)"><b>${t.relative_need_multiplier}x</b></td>
+          </tr>
+        `).join('');
+      }
+    }
 
-      const dups = (audit.duplicate_dbas || []).map(d =>
-        `<li><b>${d.records.map(r => `${r.name} (${r.address}, ID ${r.business_id})`).join(' &harr; ')}</b></li>`
-      ).join('');
-      const chgoffs = (audit.sba_loans?.chargeoff_loans || []).map(l =>
-        `<li><b>${l.borrower_name}</b> (${l.borrower_address}) — Gross Approval <b>$${l.gross_approval.toLocaleString()}</b>, Charged Off <b>$${l.chargeoff_amount.toLocaleString()}</b> on ${l.chargeoff_date}</li>`
-      ).join('');
-
-      document.getElementById('hygieneDetailsBox').innerHTML = `
-        <div style="margin-bottom:10px;">
-          <b style="color:var(--accent);">Duplicate DBA Tax Registrations Detected in Market/Castro:</b>
-          <ul style="margin:6px 0; padding-left:18px;">${dups}</ul>
-        </div>
-        <div>
-          <b style="color:var(--rose);">Historical SBA 7(a) Charge-Off Ground Truth (Liquidity Default Proof):</b>
-          <ul style="margin:6px 0; padding-left:18px;">${chgoffs}</ul>
-        </div>
-      `;
+    async function loadFullEquityAudit() {
+      try {
+        const res = await fetch('/api/equity-audit');
+        const eq = await res.json();
+        const vmHubs = (eq.virtual_mailbox_hub_audit || []).map(v =>
+          `<li><b>${v.street_address}</b> — <span class="tag tag-trap">${v.co_tenant_count} Co-Tenant PMBs</span> (Sample DBAs: ${v.sample_businesses.slice(0, 4).join(', ')}). <span style="color:var(--muted);font-size:11.5px;">${v.why_regex_missed_it}</span></li>`
+        ).join('');
+        const dups = (eq.duplicate_dba_audit || []).map(d =>
+          `<li><b>${d.records.map(r => `${r.name} (${r.address}, ID ${r.business_id})`).join(' &harr; ')}</b></li>`
+        ).join('');
+        const sba = eq.sba_7a_historical_loans || {};
+        const chgoffs = (sba.chargeoff_loans || []).map(l =>
+          `<li><b>${l.borrower_name}</b> (${l.borrower_address}) — Gross Approval <b>$${Number(l.gross_approval).toLocaleString()}</b>, Charged Off <b>$${Number(l.chargeoff_amount).toLocaleString()}</b> (${l.chargeoff_date})</li>`
+        ).join('');
+        const box = document.getElementById('hygieneDetailsBox');
+        if (box) {
+          box.innerHTML = `
+            <div style="margin-bottom:10px;">
+              <b style="color:var(--rose);">1. Virtual Mailbox Hub Audit (<code>GET /api/equity-audit</code>):</b>
+              <ul style="margin:6px 0; padding-left:18px;">${vmHubs}</ul>
+            </div>
+            <div style="margin-bottom:10px;">
+              <b style="color:var(--accent);">2. Duplicate DBA Tax Registrations Detected (${(eq.duplicate_dba_audit || []).length} Groups):</b>
+              <ul style="margin:6px 0; padding-left:18px;">${dups}</ul>
+            </div>
+            <div>
+              <b style="color:var(--emerald);">3. Historical SBA 7(a) Ground Truth (${sba.total_matched_loans || 9} Matched Loans Totaling $${Number(sba.total_gross_approval_usd || 753500).toLocaleString()} · ${(sba.chargeoff_loans || []).length} Charge-Offs):</b>
+              <ul style="margin:6px 0; padding-left:18px;">${chgoffs}</ul>
+            </div>
+          `;
+        }
+      } catch (e) {}
     }
 
     async function loadAnchorShock() {
@@ -1193,6 +1552,29 @@
       const data = await res.json();
       document.getElementById('anchorNarrative').innerHTML =
         `<b>Shock Simulation:</b> ${data.narrative_summary}`;
+
+      const flowEl = document.getElementById('anchorFlowDiagram');
+      if (flowEl && data.anchor_block) {
+        flowEl.innerHTML = `
+          <div style="background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.4);padding:7px 12px;border-radius:6px;">
+            <b>🏢 LODES Anchor Block <code>${data.anchor_block.block_geoid}</code></b><br/>
+            <span style="font-size:11.5px;color:var(--muted);">${Number(data.anchor_block.total_jobs).toLocaleString()} Jobs · ${data.anchor_block.sector_note}</span>
+          </div>
+          <div style="font-family:var(--mono);color:var(--accent);font-weight:700;">&mdash;[DrawsFootfall]&rarr;</div>
+          <div style="background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.4);padding:7px 12px;border-radius:6px;">
+            <b>🏪 ${data.direct_footfall_storefronts_impacted} Footfall-Dependent Storefronts</b><br/>
+            <span style="font-size:11.5px;color:var(--muted);">Immediate consumer foot-traffic loss within 500m</span>
+          </div>
+          <div style="font-family:var(--mono);color:var(--emerald);font-weight:700;">&larr;[Supplies]&mdash;</div>
+          <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);padding:7px 12px;border-radius:6px;">
+            <b>🚚 ${data.upstream_suppliers_indirectly_impacted} Upstream Corridor Suppliers Hurt</b><br/>
+            <span style="font-size:11.5px;color:var(--muted);">Reverse B2B order cancellation shock</span>
+          </div>
+        `;
+      }
+
+      const gqlEl = document.getElementById('anchorGqlBox');
+      if (gqlEl) gqlEl.textContent = data.gql_query_executed || '';
 
       document.getElementById('anchorDirectBody').innerHTML =
         (data.top_footfall_dependent_storefronts || []).map(s => `
@@ -1215,6 +1597,13 @@
             <td style="font-size:11.5px;color:var(--muted)">${u.affected_storefront_buyers.join(', ')}</td>
           </tr>
         `).join('');
+    }
+
+    function applyInvoicePreset(supplier, buyer, share, note) {
+      document.getElementById('inpSupplier').value = supplier;
+      document.getElementById('inpBuyer').value = buyer;
+      document.getElementById('inpShare').value = share;
+      document.getElementById('inpNote').value = note;
     }
 
     async function submitVerifiedEdge() {
@@ -1264,8 +1653,11 @@
         body: JSON.stringify({ message: msg, corridor: 'market-castro' })
       });
       const data = await res.json();
+      const subAgent = data.sub_agent_routed || 'grant_portfolio_defender';
+      const badge = document.getElementById('chatSubAgentBadge');
+      if (badge) badge.textContent = `Routed: ${subAgent}`;
       const formatted = (data.reply || '').replace(/\n/g, '<br/>');
-      log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${data.tool_called}</code>):</b><br/>${formatted}</div>`;
+      log.innerHTML += `<div class="chat-msg"><b>ADK Sub-Agent (<code>${subAgent}</code> &rarr; <code>${data.tool_called}</code>):</b><br/>${formatted}</div>`;
       log.scrollTop = log.scrollHeight;
     }
 
@@ -1352,13 +1744,13 @@
         const h = await res.json();
         const box = document.getElementById('wfHealthBox');
         if (!box) return;
-        const mcp = h.mcp_and_bigquery || {};
-        const graph = h.graph_engine || {};
+        const mcp = h.mcp_and_bigquery || h.member2_multi_agent_and_mcp_ready || {};
+        const graph = h.graph_engine || h.member1_data_and_bigquery_ready || {};
         box.innerHTML = `
           <div style="display:grid; gap:6px;">
             <div><b>Status:</b> <span class="tag tag-hop1">${(h.status || 'ok').toUpperCase()}</span> · <b>Graph Ready:</b> <code>${h.ready !== false}</code></div>
-            <div><b>Loaded Graph Counts:</b> <code>${graph.businesses_count || 327}</code> storefronts · <code>${graph.supplies_edges_count || 1199}</code> Supplies edges · <code>${graph.footfall_edges_count || 677}</code> DrawsFootfall edges · <code>${graph.tracts_count || 8}</code> 11-char ACS tracts</div>
-            <div><b>MCP Toolbox Config:</b> <code>${mcp.tools_yaml_exists ? 'agent/tools.yaml (Loaded)' : 'Fallback'}</code> · <b>Mode:</b> <code>${mcp.execution_mode || 'LOCAL_SNAPSHOT_MIRROR'}</code></div>
+            <div><b>Loaded Graph Counts:</b> <code>${graph.businesses_count || graph.businesses_loaded || 327}</code> storefronts · <code>${graph.supplies_edges_count || graph.supplies_edges_loaded || 1199}</code> Supplies edges · <code>${graph.footfall_edges_count || graph.draws_footfall_edges_loaded || 677}</code> DrawsFootfall edges · <code>${graph.tracts_count || graph.tract_demographics_loaded || 8}</code> 11-char ACS tracts</div>
+            <div><b>MCP Toolbox Config:</b> <code>${mcp.tools_yaml_exists !== false ? 'agent/tools.yaml (Loaded)' : 'Fallback'}</code> · <b>Mode:</b> <code>${mcp.execution_mode || 'LOCAL_SNAPSHOT_MIRROR'}</code></div>
             <div><b>Sub-Agents Registered:</b> <code>${(h.sub_agents || ['graph_cascade_analyst', 'equity_bias_auditor', 'grant_portfolio_defender']).join(', ')}</code></div>
           </div>
         `;

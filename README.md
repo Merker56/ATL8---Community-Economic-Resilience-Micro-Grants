@@ -1,6 +1,14 @@
 # Challenge 3—Community Economic Resilience & Micro-Grants
+**Agents for Impact 2026 · Team ATL8 Submission (`Market/Castro` Corridor + Multi-Corridor SF Console)**
 
-**Agents for Impact 2026**
+> **Quick-Start Launch (`http://localhost:8080`):**
+> ```bash
+> cd agent && uv run --with fastapi --with uvicorn --with pydantic uvicorn main:app --host 0.0.0.0 --port 8080
+> ```
+> - **Market/Castro PRD Defense Console (Member 3 Flagship UI):** `http://localhost:8080/market-castro`
+> - **Multi-Corridor SF Grant Officer Console (10 SF Corridors):** `http://localhost:8080/grant-officer`
+> - **Architecture, PRD & 3-Member Execution Docs:** [`docs/PRD_AND_TECHNICAL_DESIGN.md`](docs/PRD_AND_TECHNICAL_DESIGN.md) · [`docs/TEAM_3_MEMBER_4HR_EXECUTION_PLAN.md`](docs/TEAM_3_MEMBER_4HR_EXECUTION_PLAN.md) · [`docs/PITCH_DECK_AND_VIDEO_SCRIPT.md`](docs/PITCH_DECK_AND_VIDEO_SCRIPT.md)
+> - **End-to-End Verification Suite:** `python3 -m unittest tests/test_member2_e2e.py -v`
 
 ---
 
