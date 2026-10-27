@@ -268,6 +268,171 @@ class TestMember2Deliverables(unittest.TestCase):
         # Verify FastAPI app object is initialized when fastapi is installed
         self.assertIsNotNone(app)
 
+    def test_10_member1_raw_unenriched_schema_resilience(self) -> None:
+        """
+        Simulate Member 1 dropping a raw, un-enriched JSON file (missing derived fields
+        like is_virtual_mailbox_hub, corridor_naics4_peers, has_duplicate_dba, and using
+        unpadded 10-char tract '6075017102') to verify Member 2 auto-normalizes it.
+        """
+        import asyncio
+        import json
+        import tempfile
+
+        raw_mock = {
+            "metadata": {"corridor": "Mock-Corridor"},
+            "businesses": [
+                {
+                    "business_id": "B1",
+                    "name": "Anchor Bakery",
+                    "address": "100 Main St",
+                    "naics4": "3118",
+                    "tract": "6075017102",  # 10-char unpadded!
+                    "latitude": 37.76,
+                    "longitude": -122.43,
+                },
+                {
+                    "business_id": "B2",
+                    "name": "Corner Cafe",
+                    "address": "102 Main St",
+                    "naics4": "7225",
+                    "tract": "6075017102",
+                    "latitude": 37.7605,
+                    "longitude": -122.4305,
+                },
+                {
+                    "business_id": "B3",
+                    "name": "The Corner Cafe",  # Duplicate DBA test
+                    "address": "104 Main St",
+                    "naics4": "7225",
+                    "tract": "6075017102",
+                    "latitude": 37.761,
+                    "longitude": -122.431,
+                },
+            ],
+            "employer_blocks": [
+                {
+                    "block_geoid": "060750171011001",
+                    "tract_geoid": "6075017101",
+                    "jobs": 500,
+                }
+            ],
+            "supplies": [
+                {
+                    "edge_id": "B1|B2",
+                    "supplier_id": "B1",
+                    "buyer_id": "B2",
+                    "intensity": 0.12,
+                    "metres": 80.0,
+                },
+                {
+                    "edge_id": "B2|B3",
+                    "supplier_id": "B2",
+                    "buyer_id": "B3",
+                    "intensity": 0.08,
+                    "metres": 60.0,
+                },
+            ],
+            "draws_footfall_from": [
+                {
+                    "edge_id": "060750171011001|B1",
+                    "block_geoid": "060750171011001",
+                    "business_id": "B1",
+                    "share": 0.45,
+                    "metres": 120.0,
+                }
+            ],
+            "borrowed_from": [],
+            "tract_demographics": [
+                {
+                    "tract": "6075017102",
+                    "total_pop": 4000,
+                    "median_income": 95000,
+                    "poverty_rate": 0.14,
+                    "no_vehicle_rate": 0.35,
+                    "assistance_rate": 0.08,
+                }
+            ],
+        }
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as tf:
+            json.dump(raw_mock, tf)
+            tmp_path = tf.name
+
+        try:
+            reload_res = reload_corridor_graph(tmp_path)
+            self.assertEqual(reload_res["status"], "reloaded")
+            self.assertEqual(reload_res["businesses_count"], 3)
+
+            status = get_system_integration_status()
+            self.assertTrue(
+                status["member1_data_and_bigquery_ready"]["lpad_11char_tract_geoid_verified"]
+            )
+
+            # Verify end-to-end workflow executes cleanly even on raw Member 1 data
+            wf = run_end_to_end_workflow(
+                corridor_name="Mock-Corridor",
+                budget_pool_usd=30000.0,
+                num_grantees=1,
+                primary_candidate_query="Anchor Bakery",
+                runner_up_query="Corner Cafe",
+                anchor_block_query="060750171011001",
+            )
+            self.assertEqual(len(wf["sub_agent_traces"]), 3)
+            self.assertEqual(
+                wf["primary_friday_memo"]["tract_context"]["tract_geoid"],
+                "06075017102",
+            )
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+            # Restore production Market/Castro graph
+            reload_corridor_graph(str(ROOT_DIR / "data" / "market_castro_graph.json"))
+
+    def test_11_member3_cloud_run_fastapi_main_contract(self) -> None:
+        """
+        Verify that Cloud Run `agent/main.py` FastAPI endpoints and Member 2's
+        endpoints work seamlessly together with zero stderr errors.
+        """
+        import asyncio
+        from agent.main import (
+            ChatRequest,
+            analyze_get,
+            chat_with_agent,
+            health,
+            qa_validate,
+        )
+
+        async def _run_checks() -> None:
+            h = await health()
+            self.assertEqual(h["status"], "ok")
+            self.assertIn("member1_data_and_bigquery_ready", h)
+            self.assertIn("member2_multi_agent_and_mcp_ready", h)
+            self.assertIn("member3_ui_console_ready", h)
+
+            qa = await qa_validate("Market/Castro")
+            self.assertEqual(qa["passed_checks"], 30)
+
+            an = await analyze_get(
+                corridor="Market/Castro",
+                budget=50000.0,
+                track="main_street",
+                split_mode="split_two",
+                seed_id=None,
+            )
+            self.assertEqual(an["corridor"], "Market/Castro")
+
+            chat_mc = await chat_with_agent(
+                ChatRequest(
+                    message="Run the end-to-end multi-agent workflow for Theatre Rhinoceros",
+                    corridor="Market/Castro",
+                )
+            )
+            self.assertIn("reply", chat_mc)
+            self.assertEqual(chat_mc["tool_called"], "run_end_to_end_workflow")
+
+        asyncio.run(_run_checks())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

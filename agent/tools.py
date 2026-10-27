@@ -89,18 +89,58 @@ class MarketCastroGraphEngine:
             self.raw = json.load(f)
 
         self.summary: dict[str, Any] = self.raw.get("metadata", {})
-        self.businesses: list[dict[str, Any]] = self.raw["businesses"]
+        self.businesses: list[dict[str, Any]] = self.raw.get("businesses", [])
+
+        # Auto-normalize & enrich raw Member 1 business records if derived fields are omitted
+        addr_counts: dict[str, int] = {}
+        naics_counts: dict[str, int] = {}
+        name_counts: dict[str, int] = {}
+        for b in self.businesses:
+            # Ensure tract_geoid <-> tract compatibility and 11-char LPAD
+            raw_tract = str(b.get("tract_geoid") or b.get("tract") or "06075017102").zfill(11)
+            b["tract_geoid"] = raw_tract
+            b.setdefault("tract", raw_tract)
+            b.setdefault("naics_label", f"NAICS {b.get('naics4', '0000')}")
+            norm_addr = b.get("normalized_address") or str(b.get("address", "")).strip()
+            b["normalized_address"] = norm_addr
+            addr_counts[norm_addr] = addr_counts.get(norm_addr, 0) + 1
+            n4 = str(b.get("naics4", ""))
+            naics_counts[n4] = naics_counts.get(n4, 0) + 1
+            cname = "".join(ch for ch in str(b.get("name", "")).lower() if ch.isalnum())
+            if cname.startswith("the"):
+                cname = cname[3:]
+            name_counts[cname] = name_counts.get(cname, 0) + 1
+
+        for b in self.businesses:
+            co_tenants = addr_counts.get(b["normalized_address"], 1)
+            b.setdefault("address_co_tenant_count", co_tenants)
+            b.setdefault("is_virtual_mailbox_hub", co_tenants >= 10)
+            b.setdefault("corridor_naics4_peers", naics_counts.get(str(b.get("naics4", "")), 1))
+            cname = "".join(ch for ch in str(b.get("name", "")).lower() if ch.isalnum())
+            if cname.startswith("the"):
+                cname = cname[3:]
+            b.setdefault("has_duplicate_dba", name_counts.get(cname, 1) > 1)
+
         self.biz_by_id: dict[str, dict[str, Any]] = {
             b["business_id"]: b for b in self.businesses
         }
-        self.employer_blocks: list[dict[str, Any]] = self.raw["employer_blocks"]
+        self.employer_blocks: list[dict[str, Any]] = self.raw.get("employer_blocks", [])
+        for blk in self.employer_blocks:
+            blk.setdefault("block_id", blk.get("block_geoid", ""))
+            blk["tract"] = str(blk.get("tract") or blk.get("tract_geoid") or "06075017101").zfill(11)
         self.block_by_id: dict[str, dict[str, Any]] = {
             b["block_id"]: b for b in self.employer_blocks
         }
-        self.supplies: list[dict[str, Any]] = list(self.raw["supplies"])
-        self.draws_footfall: list[dict[str, Any]] = self.raw["draws_footfall_from"]
-        self.borrowed_from: list[dict[str, Any]] = self.raw["borrowed_from"]
-        self.tracts: list[dict[str, Any]] = self.raw["tract_demographics"]
+        self.supplies: list[dict[str, Any]] = list(self.raw.get("supplies", []))
+        self.draws_footfall: list[dict[str, Any]] = self.raw.get("draws_footfall_from", [])
+        for df in self.draws_footfall:
+            if "worker_share" not in df and "share" in df:
+                df["worker_share"] = df["share"]
+        self.borrowed_from: list[dict[str, Any]] = self.raw.get("borrowed_from", [])
+        self.tracts: list[dict[str, Any]] = self.raw.get("tract_demographics", [])
+        for t in self.tracts:
+            gid = str(t.get("geo_id") or t.get("tract_geoid") or t.get("tract") or "").zfill(11)
+            t["geo_id"] = gid
         self.tract_by_id: dict[str, dict[str, Any]] = {
             t["geo_id"].zfill(11): t for t in self.tracts
         }

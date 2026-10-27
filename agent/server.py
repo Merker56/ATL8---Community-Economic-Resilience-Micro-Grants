@@ -291,6 +291,14 @@ try:
             return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
         return HTMLResponse(content="<h1>Static UI index.html not found</h1>", status_code=404)
 
+    @app.get("/market-castro")
+    async def serve_market_castro_console() -> HTMLResponse:
+        mc_file = STATIC_DIR / "market_castro_console.html"
+        target = mc_file if mc_file.exists() else (STATIC_DIR / "index.html")
+        if target.exists():
+            return HTMLResponse(content=target.read_text(encoding="utf-8"))
+        return HTMLResponse(content="<h1>Static UI not found</h1>", status_code=404)
+
     @app.get("/api/{endpoint:path}")
     async def fastapi_get_router(endpoint: str, request: Request) -> JSONResponse:
         status, payload = handle_api_get(f"/api/{endpoint}", request.url.query)

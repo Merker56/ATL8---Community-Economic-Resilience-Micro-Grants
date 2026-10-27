@@ -18,9 +18,11 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+AGENT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = AGENT_DIR.parent
+for _p in (str(ROOT_DIR), str(AGENT_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 try:
     from agent.server import handle_api_get as mc_handle_get, handle_api_post as mc_handle_post
@@ -143,7 +145,11 @@ async def serve_market_castro_intake(request: Request):
 @app.get("/api/health")
 async def health():
     bq_status = try_bigquery_status()
+    mc_health = {}
+    if mc_handle_get is not None:
+        _, mc_health = mc_handle_get("/api/health", "")
     return {
+        **mc_health,
         "status": "ok",
         "service": "atl8-grant-officer-agent",
         "project_id": PROJECT_ID,
@@ -408,8 +414,17 @@ def _answer_officer_question_deterministically(req: ChatRequest) -> str:
 
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest):
+    has_llm_creds = bool(
+        os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1")
+    )
     # Try ADK Runner with Gemini first if credentials are configured in Cloud Run
-    if root_agent is not None and os.environ.get("ENABLE_LIVE_GEMINI_CHAT", "true").lower() == "true":
+    if (
+        root_agent is not None
+        and has_llm_creds
+        and os.environ.get("ENABLE_LIVE_GEMINI_CHAT", "true").lower() == "true"
+    ):
         try:
             from google.adk.runners import Runner
             from google.adk.sessions import InMemorySessionService
@@ -453,6 +468,31 @@ async def chat_with_agent(req: ChatRequest):
                 }
         except Exception:
             pass
+
+    # If the user is querying the Market/Castro multi-agent workflow or specific Market/Castro businesses,
+    # include the structured Market/Castro tool data payload as well.
+    low_msg = (req.message or "").lower()
+    if mc_handle_post is not None and any(
+        k in low_msg
+        for k in (
+            "end-to-end",
+            "end to end",
+            "workflow",
+            "sub-agent",
+            "multi-agent",
+            "rhinoceros",
+            "canela",
+            "du nord",
+            "2261 market",
+            "primo",
+        )
+    ):
+        _, mc_res = mc_handle_post("/api/chat", {"message": req.message})
+        return {
+            **mc_res,
+            "engine": "adk-graph-tool-engine",
+            "session_id": req.session_id or "demo-session",
+        }
 
     # Instant deterministic graph-grounded response fallback
     reply = _answer_officer_question_deterministically(req)
