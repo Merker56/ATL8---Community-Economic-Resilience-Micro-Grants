@@ -91,10 +91,12 @@ check(
     status == 200 and info.get("agent_name") == "grant_officer_agent" and len(info.get("sub_agents", [])) == 3,
     f"sub_agents={info.get('sub_agents')}, tools={len(info.get('tools', []))}, corridors={len(info.get('corridors', {}))}",
 )
+status, hier = req_json("/api/hierarchy")
+status_mcp, mcp_manifest = req_json("/api/mcp-status")
 check(
-    "M2.2 Managed BigQuery MCP & Parameterized tools.yaml",
-    m2.get("tools_yaml_exists") is True and m2.get("bigquery_mcp_endpoint") == "https://bigquery.googleapis.com/mcp",
-    f"mcp={m2.get('bigquery_mcp_endpoint')}, mode={m2.get('active_execution_mode')}",
+    "M2.2 Managed BigQuery MCP & Sub-Agent Hierarchy (/api/hierarchy + /api/mcp-status)",
+    status == 200 and status_mcp == 200 and hier.get("root_agent", {}).get("name") == "market_castro_grant_advisor" and mcp_manifest.get("mcp_tools_manifest", {}).get("tool_count") == 5,
+    f"root={hier.get('root_agent', {}).get('name')}, mcp_tools={mcp_manifest.get('mcp_tools_manifest', {}).get('tool_count')}, mode={m2.get('active_execution_mode')}",
 )
 status, memo = req_json("/api/memo?business=Theatre+Rhinoceros&runner_up=Cafe+Du+Nord")
 check(

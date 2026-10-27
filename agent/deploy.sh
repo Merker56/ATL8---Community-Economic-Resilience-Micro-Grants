@@ -66,7 +66,17 @@ if command -v bq >/dev/null 2>&1; then
   echo "----------------------------------------------------------------------"
   echo " Verifying Member 1 BigQuery Dataset (${PROJECT_ID}:${BQ_DATASET}) & Property Graph..."
   echo "----------------------------------------------------------------------"
-  if ! bq show "${PROJECT_ID}:${BQ_DATASET}.businesses" >/dev/null 2>&1; then
+  bq --project_id="${PROJECT_ID}" mk --dataset --force "${BQ_DATASET}" >/dev/null 2>&1 || true
+  if [[ -d "${REPO_ROOT}/data/bq_export" ]]; then
+    echo "Loading Member 1 enriched JSONL tables (data/bq_export/*.jsonl) into ${PROJECT_ID}:${BQ_DATASET}..."
+    for tbl in businesses employer_blocks supplies draws_footfall_from borrowed_from tract_demographics; do
+      if [[ -f "${REPO_ROOT}/data/bq_export/${tbl}.jsonl" ]]; then
+        bq --project_id="${PROJECT_ID}" load --replace --autodetect \
+          --source_format=NEWLINE_DELIMITED_JSON \
+          "${BQ_DATASET}.${tbl}" "${REPO_ROOT}/data/bq_export/${tbl}.jsonl" || true
+      fi
+    done
+  elif ! bq show "${PROJECT_ID}:${BQ_DATASET}.businesses" >/dev/null 2>&1; then
     echo "Loading Member 1 corridor tables into ${PROJECT_ID}:${BQ_DATASET}..."
     bash "${REPO_ROOT}/scripts/load.sh" market-castro || true
   fi
