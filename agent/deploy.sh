@@ -10,6 +10,8 @@ PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-qwiklabs-gcp-03-46ba9aeed89b}"
 PROJECT_NUMBER="${PROJECT_NUMBER:-187574395280}"
 REGION="${GOOGLE_CLOUD_LOCATION:-us-east1}"
 SERVICE_NAME="${SERVICE_NAME:-atl8-grant-officer-agent}"
+GAR_REPO="${GAR_REPO:-atl8}"
+GAR_IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${SERVICE_NAME}:latest"
 SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-${PROJECT_NUMBER}-compute@developer.gserviceaccount.com}"
 VPC_CONNECTOR="projects/${PROJECT_ID}/locations/${REGION}/connectors/shared-cloudrun-connector"
 BQ_DATASET="${BQ_DATASET:-a4i_econ}"
@@ -86,9 +88,29 @@ if command -v bq >/dev/null 2>&1; then
   fi
 fi
 
-# Step 2: Deploy Unified Member 1 + Member 2 + Member 3 Service to Cloud Run
+# Step 2: Build & Push Image to Google Artifact Registry (GAR)
+echo "----------------------------------------------------------------------"
+echo " Ensuring Artifact Registry repository (${GAR_REPO}) & building GAR image..."
+echo " Target GAR URI: ${GAR_IMAGE_URI}"
+echo "----------------------------------------------------------------------"
+if ! gcloud artifacts repositories describe "${GAR_REPO}" \
+     --project="${PROJECT_ID}" --location="${REGION}" >/dev/null 2>&1; then
+  gcloud artifacts repositories create "${GAR_REPO}" \
+    --project="${PROJECT_ID}" \
+    --repository-format=docker \
+    --location="${REGION}" \
+    --description="ATL8 Community Economic Resilience & Micro-Grants Docker Repository" || true
+fi
+
+gcloud builds submit \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --tag "${GAR_IMAGE_URI}" \
+  .
+
+# Step 3: Deploy Unified Member 1 + Member 2 + Member 3 Image from GAR to Cloud Run
 gcloud run deploy "${SERVICE_NAME}" \
-  --source . \
+  --image="${GAR_IMAGE_URI}" \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
   --service-account="${SERVICE_ACCOUNT}" \
