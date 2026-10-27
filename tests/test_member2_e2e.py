@@ -433,6 +433,55 @@ class TestMember2Deliverables(unittest.TestCase):
 
         asyncio.run(_run_checks())
 
+    def test_12_dual_ui_switcher_leaflet_map_and_workflow_trace(self) -> None:
+        """
+        Verify Recommendation 1, 2 & 3:
+          - Dual UI navigation switcher between /grant-officer and /market-castro
+          - 3-Sub-Agent Pipeline Trace tab (tabWorkflow) in market_castro_console.html
+          - Interactive Leaflet Street Map (leafletMap) + lat/lon on DownstreamCascadeNode
+          - /api/agent-info exposing sub_agents and mcp_tools_yaml
+        """
+        import asyncio
+        from agent.main import agent_info, serve_market_castro_ui, serve_ui
+
+        async def _verify_ui_and_agent_info() -> None:
+            info = await agent_info()
+            self.assertIn("sub_agents", info)
+            self.assertEqual(
+                info["sub_agents"],
+                [
+                    "graph_cascade_analyst",
+                    "equity_bias_auditor",
+                    "grant_portfolio_defender",
+                ],
+            )
+            self.assertEqual(info["mcp_tools_yaml"], "agent/tools.yaml")
+
+            resp_go = await serve_ui()
+            self.assertIsNotNone(resp_go)
+            resp_mc = await serve_market_castro_ui()
+            self.assertIsNotNone(resp_mc)
+
+        asyncio.run(_verify_ui_and_agent_info())
+
+        index_html = (ROOT_DIR / "agent" / "static" / "index.html").read_text(encoding="utf-8")
+        mc_html = (ROOT_DIR / "agent" / "static" / "market_castro_console.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('href="/market-castro"', index_html)
+        self.assertIn('href="/grant-officer"', mc_html)
+        self.assertIn('id="tabWorkflow"', mc_html)
+        self.assertIn('id="leafletMap"', mc_html)
+        self.assertIn("runWorkflowPipeline()", mc_html)
+        self.assertIn("triggerGraphReload()", mc_html)
+
+        memo = generate_friday_grant_memo(business_query="Theatre Rhinoceros")
+        first_node = memo["cascade_nodes"][0]
+        self.assertIn("latitude", first_node)
+        self.assertIn("longitude", first_node)
+        self.assertGreater(first_node["latitude"], 37.7)
+        self.assertLess(first_node["longitude"], -122.4)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

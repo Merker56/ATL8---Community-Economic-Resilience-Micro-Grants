@@ -98,6 +98,7 @@ class ChatRequest(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/grant-officer", response_class=HTMLResponse)
 async def serve_ui():
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
@@ -182,7 +183,20 @@ async def agent_info():
             "record_supplier_intake_edge",
             "generate_friday_grant_memo",
             "validate_graph_and_qa_checks",
+            "discover_cascade_candidates",
+            "optimize_corridor_portfolio",
+            "simulate_anchor_closure",
+            "audit_corridor_equity_and_bias",
+            "add_verified_merchant_supplier",
+            "reload_corridor_graph",
+            "get_system_integration_status",
         ],
+        "sub_agents": [
+            "graph_cascade_analyst",
+            "equity_bias_auditor",
+            "grant_portfolio_defender",
+        ],
+        "mcp_tools_yaml": "agent/tools.yaml",
         "corridors": CORRIDOR_METADATA,
     }
 
@@ -472,19 +486,23 @@ async def chat_with_agent(req: ChatRequest):
     # If the user is querying the Market/Castro multi-agent workflow or specific Market/Castro businesses,
     # include the structured Market/Castro tool data payload as well.
     low_msg = (req.message or "").lower()
-    if mc_handle_post is not None and any(
-        k in low_msg
-        for k in (
-            "end-to-end",
-            "end to end",
-            "workflow",
-            "sub-agent",
-            "multi-agent",
-            "rhinoceros",
-            "canela",
-            "du nord",
-            "2261 market",
-            "primo",
+    if mc_handle_post is not None and (
+        req.corridor == "market-castro"
+        or any(
+            k in low_msg
+            for k in (
+                "end-to-end",
+                "end to end",
+                "workflow",
+                "sub-agent",
+                "multi-agent",
+                "rhinoceros",
+                "canela",
+                "du nord",
+                "2261 market",
+                "primo",
+                "castro station",
+            )
         )
     ):
         _, mc_res = mc_handle_post("/api/chat", {"message": req.message})

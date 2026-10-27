@@ -312,6 +312,8 @@ class MarketCastroGraphEngine:
                 metres=float(e1["metres"]),
                 is_verified_edge=bool(e1.get("is_verified", False)),
                 is_virtual_mailbox=bool(b1.get("is_virtual_mailbox_hub", False)),
+                latitude=float(b1.get("latitude", 37.762)),
+                longitude=float(b1.get("longitude", -122.435)),
             )
             cascade_nodes.append(node1)
             to_json_paths.append(
@@ -353,6 +355,8 @@ class MarketCastroGraphEngine:
                         e1.get("is_verified", False) or e2.get("is_verified", False)
                     ),
                     is_virtual_mailbox=bool(b2.get("is_virtual_mailbox_hub", False)),
+                    latitude=float(b2.get("latitude", 37.762)),
+                    longitude=float(b2.get("longitude", -122.435)),
                 )
                 path_json = {
                     "kind": "path",

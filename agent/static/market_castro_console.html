@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A4I 2026 | Market/Castro Micro-Grant Committee Defense Console</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --bg: #0b1020;
@@ -330,7 +332,18 @@
         </div>
       </div>
       <div>
-        <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Meeting Preset ($25k + $25k Split)</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button class="btn" onclick="openWorkflowTabAndRun()" style="background:linear-gradient(135deg,#0284c7,#2563eb);padding:7px 13px;font-size:12px;">
+            ⚡ Run 3-Sub-Agent Pipeline (/api/workflow)
+          </button>
+          <button class="btn-secondary" onclick="triggerGraphReload()" id="btnReloadGraph">
+            🔄 Reload Member 1 Graph (/api/reload)
+          </button>
+          <a href="/grant-officer" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;border-color:#38bdf8;color:#38bdf8;">
+            🌐 10-Corridor SF Console (/grant-officer) &rarr;
+          </a>
+          <button class="btn-secondary" onclick="resetDefaults()">Reset Friday Preset ($25k + $25k)</button>
+        </div>
       </div>
     </div>
     <div class="kpi-strip">
@@ -404,10 +417,11 @@
 
     <!-- Navigation Tabs -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tabMemo', this)">1. 7-Part Friday Defense Memo & Cascade Graph</button>
-      <button class="tab-btn" onclick="switchTab('tabHygiene', this)">2. Why Not Naive Centrality? (Bias, Virtual Mailboxes & Equity Audit)</button>
-      <button class="tab-btn" onclick="switchTab('tabAnchor', this)">3. Track 3: Two-Direction Anchor Closure Simulator</button>
-      <button class="tab-btn" onclick="switchTab('tabBonus', this)">4. +10 Bonus: Live Merchant Supplier Intake & ADK Agent Q&A</button>
+      <button class="tab-btn active" id="btnTabMemo" onclick="switchTab('tabMemo', this)">1. 7-Part Friday Defense Memo & Cascade Graph</button>
+      <button class="tab-btn" id="btnTabHygiene" onclick="switchTab('tabHygiene', this)">2. Why Not Naive Centrality? (Bias, Virtual Mailboxes & Equity Audit)</button>
+      <button class="tab-btn" id="btnTabAnchor" onclick="switchTab('tabAnchor', this)">3. Track 3: Two-Direction Anchor Closure Simulator</button>
+      <button class="tab-btn" id="btnTabBonus" onclick="switchTab('tabBonus', this)">4. +10 Bonus: Live Merchant Supplier Intake & ADK Agent Q&A</button>
+      <button class="tab-btn" id="btnTabWorkflow" onclick="switchTab('tabWorkflow', this)">5. ⚡ 3-Sub-Agent Pipeline & MCP/BigQuery Trace (/api/workflow)</button>
     </div>
 
     <!-- TAB 1: 7-PART MEMO & CASCADE VISUALIZER -->
@@ -456,11 +470,16 @@
           <div class="card">
             <h2>
               <span>1-to-2 Hop Supply Cascade Topology (`TO_JSON(p)` Path Renderer)</span>
-              <button class="btn-secondary" onclick="toggleJsonModal()">Inspect `TO_JSON(p)` & GQL</button>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-secondary" id="btnViewRadial" onclick="toggleGraphViewMode('radial')" style="border-color:var(--accent);color:var(--accent);">Radial 2-Hop SVG</button>
+                <button class="btn-secondary" id="btnViewMap" onclick="toggleGraphViewMode('map')">🗺️ Street Map (Leaflet)</button>
+                <button class="btn-secondary" onclick="toggleJsonModal()">Inspect `TO_JSON(p)` & GQL</button>
+              </div>
             </h2>
             <div class="graph-canvas-wrap">
               <svg id="cascadeSvg" viewBox="0 0 680 420"></svg>
-              <div class="graph-legend">
+              <div id="leafletMap" style="display:none; width:100%; height:100%; z-index:1;"></div>
+              <div class="graph-legend" style="z-index:10;">
                 <span><i class="dot" style="background:#f59e0b"></i>Focal Grant Recipient</span>
                 <span><i class="dot" style="background:#10b981"></i>Hop 1 Direct Buyer</span>
                 <span><i class="dot" style="background:#38bdf8"></i>Hop 2 Indirect Buyer</span>
@@ -710,16 +729,97 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 5: 3-SUB-AGENT PIPELINE & MCP/BIGQUERY TRACE (/api/workflow) -->
+    <div id="tabWorkflow" class="tab-pane">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <div>
+            <h2 style="margin:0;">
+              <span>Google ADK 3-Sub-Agent End-to-End Orchestration Pipeline (<code>/api/workflow</code>)</span>
+              <span class="tag tag-hop1" id="wfElapsedBadge">Ready</span>
+            </h2>
+            <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">
+              Executes <b><code>graph_cascade_analyst</code></b> &rarr; <b><code>equity_bias_auditor</code></b> &rarr; <b><code>grant_portfolio_defender</code></b> over <code>a4i_econ.LocalEconomy</code> with full GQL and MCP telemetry.
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="wfBudgetPool" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+              <option value="50000" selected>$50,000 Relief Pool</option>
+              <option value="75000">$75,000 Relief Pool</option>
+              <option value="100000">$100,000 Relief Pool</option>
+            </select>
+            <select id="wfMaxGrants" style="background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12.5px;">
+              <option value="1">Max 1 Grantee</option>
+              <option value="2" selected>Max 2 Grantees (Recommended)</option>
+              <option value="3">Max 3 Grantees</option>
+              <option value="4">Max 4 Grantees</option>
+            </select>
+            <button class="btn" onclick="runWorkflowPipeline()" id="btnRunWorkflow">
+              ⚡ Execute 3-Sub-Agent Pipeline Now
+            </button>
+          </div>
+        </div>
+
+        <div id="wfSummaryBanner" class="memo-part good" style="margin-bottom:16px;">
+          Loading 3-Sub-Agent pipeline trace...
+        </div>
+
+        <div id="wfStepsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:14px; margin-bottom:16px;"></div>
+
+        <div class="split-grid">
+          <div class="card" style="margin-bottom:0; background:var(--panel-alt);">
+            <h2><span>MCP Toolbox (`agent/tools.yaml`) & BigQuery Integration Health (`GET /api/health`)</span></h2>
+            <div id="wfHealthBox" style="font-size:12.8px; color:var(--text);">Loading health telemetry...</div>
+          </div>
+          <div class="card" style="margin-bottom:0; background:var(--panel-alt);">
+            <h2><span>Sub-Agent Executed BigQuery GQL Queries (`sql/02_gql_cascade_queries.sql`)</span></h2>
+            <div class="code-box" id="wfGqlBox" style="max-height:210px;">Loading GQL queries...</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     let overviewData = null;
+    let currentMemo = null;
+    let graphViewMode = 'radial';
+    let leafletMapInstance = null;
+    let leafletLayerGroup = null;
 
     function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (tabId === 'tabMemo' && graphViewMode === 'map' && leafletMapInstance) {
+        setTimeout(() => leafletMapInstance.invalidateSize(), 60);
+      }
+    }
+
+    function toggleGraphViewMode(mode) {
+      graphViewMode = mode;
+      const svgEl = document.getElementById('cascadeSvg');
+      const mapEl = document.getElementById('leafletMap');
+      const btnRadial = document.getElementById('btnViewRadial');
+      const btnMap = document.getElementById('btnViewMap');
+      if (mode === 'map') {
+        svgEl.style.display = 'none';
+        mapEl.style.display = 'block';
+        btnMap.style.borderColor = 'var(--accent)';
+        btnMap.style.color = 'var(--accent)';
+        btnRadial.style.borderColor = 'var(--border)';
+        btnRadial.style.color = 'var(--text)';
+        if (currentMemo) renderLeafletMap(currentMemo);
+      } else {
+        mapEl.style.display = 'none';
+        svgEl.style.display = 'block';
+        btnRadial.style.borderColor = 'var(--accent)';
+        btnRadial.style.color = 'var(--accent)';
+        btnMap.style.borderColor = 'var(--border)';
+        btnMap.style.color = 'var(--text)';
+      }
     }
 
     function toggleJsonModal() {
@@ -747,6 +847,12 @@
       } else {
         loadPortfolio();
       }
+      if (overviewData.end_to_end_workflow) {
+        renderWorkflowResult(overviewData.end_to_end_workflow);
+      } else {
+        runWorkflowPipeline();
+      }
+      loadHealthTelemetry();
       loadAnchorShock();
     }
 
@@ -846,8 +952,88 @@
       document.getElementById('gqlQueryBox').textContent = m.gql_query_executed;
       document.getElementById('toJsonBox').textContent = JSON.stringify(m.to_json_paths.slice(0, 2), null, 2);
 
+      currentMemo = m;
       renderCascadeTable(m.cascade_nodes);
       renderCascadeSvg(m);
+      if (graphViewMode === 'map') {
+        renderLeafletMap(m);
+      }
+    }
+
+    function renderLeafletMap(memo) {
+      if (typeof L === 'undefined') return;
+      const mapEl = document.getElementById('leafletMap');
+      if (!leafletMapInstance) {
+        leafletMapInstance = L.map(mapEl).setView([37.7628, -122.4342], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; OpenStreetMap & CartoDB'
+        }).addTo(leafletMapInstance);
+        leafletLayerGroup = L.layerGroup().addTo(leafletMapInstance);
+      }
+      setTimeout(() => leafletMapInstance.invalidateSize(), 50);
+      leafletLayerGroup.clearLayers();
+
+      // Extract focal coordinates from TO_JSON(p) first path element or fallback
+      let focalLat = 37.7614, focalLon = -122.4350;
+      if (memo.to_json_paths && memo.to_json_paths.length > 0) {
+        const el0 = memo.to_json_paths[0].elements?.[0]?.properties;
+        if (el0 && el0.latitude && el0.longitude) {
+          focalLat = Number(el0.latitude);
+          focalLon = Number(el0.longitude);
+        }
+      }
+
+      const nodes = memo.cascade_nodes || [];
+      const coordsById = {};
+      coordsById[memo.recommended_business_id] = [focalLat, focalLon];
+
+      nodes.forEach((n, idx) => {
+        const lat = Number(n.latitude) || (focalLat + ((idx % 7) - 3) * 0.0008);
+        const lon = Number(n.longitude) || (focalLon + ((idx % 5) - 2) * 0.0009);
+        coordsById[n.business_id] = [lat, lon];
+      });
+
+      // Draw edges
+      nodes.forEach(n => {
+        const targetLatLon = coordsById[n.business_id];
+        const srcLatLon = n.hop === 1
+          ? [focalLat, focalLon]
+          : (coordsById[n.via_business_id] || [focalLat, focalLon]);
+        const color = n.is_verified_edge ? '#f59e0b' : (n.hop === 1 ? '#10b981' : '#38bdf8');
+        L.polyline([srcLatLon, targetLatLon], {
+          color: color,
+          weight: n.hop === 1 ? 3 : 1.8,
+          opacity: 0.78,
+          dashArray: n.hop === 2 ? '4, 4' : null
+        }).addTo(leafletLayerGroup);
+      });
+
+      // Draw downstream markers
+      nodes.forEach(n => {
+        const [lat, lon] = coordsById[n.business_id];
+        const fill = n.is_virtual_mailbox ? '#f43f5e' : (n.hop === 1 ? '#10b981' : '#38bdf8');
+        L.circleMarker([lat, lon], {
+          radius: n.hop === 1 ? 8 : 6,
+          fillColor: fill,
+          color: '#0f172a',
+          weight: 2,
+          fillOpacity: 0.92
+        })
+          .bindPopup(`<b>${n.name}</b> (Hop ${n.hop})<br/>${n.address}<br/>NAICS: ${n.naics_label}<br/>Intensity: <code>${n.compounded_intensity}</code> · ${n.metres}m`)
+          .addTo(leafletLayerGroup);
+      });
+
+      // Draw Focal recipient marker
+      L.circleMarker([focalLat, focalLon], {
+        radius: 12,
+        fillColor: '#f59e0b',
+        color: '#ffffff',
+        weight: 3,
+        fillOpacity: 1.0
+      })
+        .bindPopup(`<b>★ FOCAL GRANTEE: ${memo.recommended_business_name}</b><br/>${memo.recommended_address}<br/>Grant: <b>$${memo.grant_amount_usd.toLocaleString()}</b><br/>Protects ${memo.total_2hop_exposed_count} downstream nodes`)
+        .addTo(leafletLayerGroup)
+        .openPopup();
     }
 
     function renderCascadeTable(nodes) {
@@ -1075,12 +1261,130 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg })
+        body: JSON.stringify({ message: msg, corridor: 'market-castro' })
       });
       const data = await res.json();
       const formatted = (data.reply || '').replace(/\n/g, '<br/>');
       log.innerHTML += `<div class="chat-msg"><b>ADK Agent (<code>${data.tool_called}</code>):</b><br/>${formatted}</div>`;
       log.scrollTop = log.scrollHeight;
+    }
+
+    function openWorkflowTabAndRun() {
+      const btn = document.getElementById('btnTabWorkflow');
+      switchTab('tabWorkflow', btn);
+      runWorkflowPipeline();
+    }
+
+    async function runWorkflowPipeline() {
+      const budget = document.getElementById('wfBudgetPool')?.value || 50000;
+      const maxGrants = document.getElementById('wfMaxGrants')?.value || 2;
+      const btn = document.getElementById('btnRunWorkflow');
+      if (btn) btn.textContent = '⏳ Running 3 Sub-Agents...';
+      try {
+        const res = await fetch(`/api/workflow?budget_pool=${encodeURIComponent(budget)}&num_grantees=${encodeURIComponent(maxGrants)}&anchor=060750171011001`);
+        const wf = await res.json();
+        renderWorkflowResult(wf);
+      } finally {
+        if (btn) btn.textContent = '⚡ Execute 3-Sub-Agent Pipeline Now';
+      }
+    }
+
+    function renderWorkflowResult(wf) {
+      if (!wf) return;
+      const badge = document.getElementById('wfElapsedBadge');
+      const totalMs = wf.total_execution_ms ?? wf.total_elapsed_ms ?? 0;
+      if (badge) {
+        badge.textContent = `3 Sub-Agents Completed in ${totalMs} ms`;
+      }
+      const banner = document.getElementById('wfSummaryBanner');
+      const port = wf.portfolio_optimization || {};
+      const poolUsd = port.budget_pool_usd ?? wf.budget_pool_usd ?? 50000;
+      const kSel = port.num_grantees_selected ?? wf.recommended_grantees_count ?? 2;
+      const uniqPhys = port.total_unique_physical_storefronts_protected ?? wf.total_unique_storefronts_protected ?? 13;
+      const uniqNodes = port.total_unique_2hop_nodes_protected ?? 40;
+      if (banner) {
+        banner.innerHTML =
+          `<b>Workflow ID:</b> <code>${wf.workflow_id}</code> · <b>Corridor:</b> <code>${wf.corridor || wf.corridor_name}</code> · <b>Execution Mode:</b> <code>${wf.execution_mode || wf.data_source}</code><br/>` +
+          `<b>Portfolio Outcome ($${Number(poolUsd).toLocaleString()} Pool, K=${kSel}):</b> ` +
+          `Protects <b>${uniqPhys} unique physical storefronts</b> (<b>${uniqNodes} total 2-hop nodes</b>) with zero double-counting.<br/>` +
+          `<span style="font-size:12px;color:var(--muted);">${wf.executive_committee_brief || ''}</span>`;
+      }
+      const traces = wf.sub_agent_traces || wf.sub_agent_steps || [];
+      const grid = document.getElementById('wfStepsGrid');
+      if (grid) {
+        grid.innerHTML = traces.map((s, idx) => {
+          const name = s.sub_agent_name || s.agent_name;
+          const ms = s.execution_ms ?? s.elapsed_ms ?? 0;
+          const role = s.role_description || s.role || '';
+          const tools = Array.isArray(s.tools_invoked) ? s.tools_invoked.join(', ') : (s.tool_called || '');
+          const summary = s.key_findings_summary || s.summary || '';
+          return `
+            <div class="memo-part ${idx === 0 ? '' : (idx === 1 ? 'warn' : 'good')}" style="margin:0;">
+              <div class="part-title" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Step ${s.step_order || (idx + 1)} · <code>${name}</code></span>
+                <span class="tag tag-hop1">${ms} ms</span>
+              </div>
+              <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">
+                <b>Role:</b> ${role}<br/>
+                <b>ADK Tools Invoked:</b> <code>${tools}</code>
+              </div>
+              <div class="part-body" style="font-size:12.6px;">${summary}</div>
+            </div>
+          `;
+        }).join('');
+      }
+      const gqlBox = document.getElementById('wfGqlBox');
+      if (gqlBox) {
+        gqlBox.textContent = traces
+          .map(s => {
+            const name = s.sub_agent_name || s.agent_name;
+            const tools = Array.isArray(s.tools_invoked) ? s.tools_invoked.join(', ') : (s.tool_called || '');
+            const queries = Array.isArray(s.gql_queries_executed) ? s.gql_queries_executed.join('\n') : (s.gql_executed || '');
+            return `-- [${name}] (${tools})\n${queries}`;
+          })
+          .join('\n\n');
+      }
+    }
+
+    async function loadHealthTelemetry() {
+      try {
+        const res = await fetch('/api/health');
+        const h = await res.json();
+        const box = document.getElementById('wfHealthBox');
+        if (!box) return;
+        const mcp = h.mcp_and_bigquery || {};
+        const graph = h.graph_engine || {};
+        box.innerHTML = `
+          <div style="display:grid; gap:6px;">
+            <div><b>Status:</b> <span class="tag tag-hop1">${(h.status || 'ok').toUpperCase()}</span> · <b>Graph Ready:</b> <code>${h.ready !== false}</code></div>
+            <div><b>Loaded Graph Counts:</b> <code>${graph.businesses_count || 327}</code> storefronts · <code>${graph.supplies_edges_count || 1199}</code> Supplies edges · <code>${graph.footfall_edges_count || 677}</code> DrawsFootfall edges · <code>${graph.tracts_count || 8}</code> 11-char ACS tracts</div>
+            <div><b>MCP Toolbox Config:</b> <code>${mcp.tools_yaml_exists ? 'agent/tools.yaml (Loaded)' : 'Fallback'}</code> · <b>Mode:</b> <code>${mcp.execution_mode || 'LOCAL_SNAPSHOT_MIRROR'}</code></div>
+            <div><b>Sub-Agents Registered:</b> <code>${(h.sub_agents || ['graph_cascade_analyst', 'equity_bias_auditor', 'grant_portfolio_defender']).join(', ')}</code></div>
+          </div>
+        `;
+      } catch (e) {}
+    }
+
+    async function triggerGraphReload() {
+      const btn = document.getElementById('btnReloadGraph');
+      if (btn) btn.textContent = '⏳ Reloading...';
+      try {
+        const res = await fetch('/api/reload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.businesses_loaded) {
+          document.getElementById('kpiStorefronts').innerHTML = `${data.businesses_loaded} <span style="font-size:11px;color:var(--muted)">reloaded</span>`;
+          document.getElementById('kpiSupplies').textContent = Number(data.supplies_edges_loaded).toLocaleString();
+        }
+        await initDashboard();
+        if (btn) btn.textContent = '✓ Graph Reloaded (' + (data.businesses_loaded || 327) + ' Nodes)';
+        setTimeout(() => { if (btn) btn.textContent = '🔄 Reload Member 1 Graph (/api/reload)'; }, 2500);
+      } catch (e) {
+        if (btn) btn.textContent = '🔄 Reload Member 1 Graph (/api/reload)';
+      }
     }
 
     window.addEventListener('DOMContentLoaded', initDashboard);

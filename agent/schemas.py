@@ -28,6 +28,8 @@ class DownstreamCascadeNode:
     metres: float
     is_verified_edge: bool = False
     is_virtual_mailbox: bool = False
+    latitude: float = 0.0
+    longitude: float = 0.0
 
 
 @dataclass
