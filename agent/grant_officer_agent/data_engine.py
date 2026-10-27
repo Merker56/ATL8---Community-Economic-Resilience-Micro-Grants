@@ -1116,60 +1116,183 @@ def evaluate_corridor_portfolio(
     loan_map = {l["business_id"]: l for l in net["borrowed_from"]}
 
     candidates = []
+    all_corridor_evaluations = []
+    in_supplies_map: Dict[str, List[Dict[str, Any]]] = {}
+    for e in net["supplies"]:
+        in_supplies_map.setdefault(e["buyer_id"], []).append(e)
+    ff_by_biz: Dict[str, float] = {}
+    for f_edge in net["draws_footfall_from"]:
+        ff_by_biz[f_edge["business_id"]] = ff_by_biz.get(f_edge["business_id"], 0.0) + float(f_edge.get("worker_share", 0.0))
+
     for b in net["businesses"]:
-        if b["role"] in ("sweet_spot_primary", "sweet_spot_runner_up", "sweet_spot_third", "centrality_hub_trap", "leaf_applicant"):
-            casc = compute_2hop_cascade(corridor=corridor, seed_id=b["business_id"], track=track)
-            t_info = tract_map.get(b["tract"], net["tract_demographics"][0])
-            # Composite resilience score:
-            # Rewards sweet-spot 2-hop reach (5..25), high direct BEA intensity, financial fragility,
-            # non-substitutability, and census tract poverty need. Penalizes generic substitutable giant hubs.
-            in_sweet_spot = 5 <= (casc["total_downstream_protected"] + b["exposed_2hop_count"]) <= 25
-            mean_hop1_intensity = (
-                sum(x["intensity"] for x in casc["hop1_businesses"]) / max(len(casc["hop1_businesses"]), 1)
-                if casc["hop1_businesses"] else 0.0
+        casc = compute_2hop_cascade(corridor=corridor, seed_id=b["business_id"], track=track)
+        t_info = tract_map.get(b["tract"], net["tract_demographics"][0])
+        in_edges = in_supplies_map.get(b["business_id"], [])
+        local_upstream_count = len({e["supplier_id"] for e in in_edges})
+        local_upstream_intensity = round(sum(float(e["intensity"]) for e in in_edges), 4)
+        footfall_workers = round(ff_by_biz.get(b["business_id"], float(b.get("footfall_workers", 0))), 1)
+
+        in_sweet_spot = 5 <= b["exposed_2hop_count"] <= 25
+        mean_hop1_intensity = (
+            sum(x["intensity"] for x in casc["hop1_businesses"]) / max(len(casc["hop1_businesses"]), 1)
+            if casc["hop1_businesses"] else 0.0
+        )
+        hub_penalty = 0.45 if b["role"] == "centrality_hub_trap" else 1.0
+        resilience_score = round(
+            (
+                (b["distress_score"] * 32.0)
+                + (min(b["exposed_2hop_count"], 25) * 1.6)
+                + (mean_hop1_intensity * 180.0)
+                + (t_info["poverty_rate"] * 45.0)
+                + (local_upstream_count * 1.8)
+                + (min(footfall_workers, 500.0) / 120.0)
             )
-            hub_penalty = 0.45 if b["role"] == "centrality_hub_trap" else 1.0
-            resilience_score = round(
-                (
-                    (b["distress_score"] * 32.0)
-                    + (min(b["exposed_2hop_count"], 25) * 1.6)
-                    + (mean_hop1_intensity * 180.0)
-                    + (t_info["poverty_rate"] * 45.0)
-                )
-                * hub_penalty,
-                1,
-            )
-            candidates.append({
-                "business_id": b["business_id"],
-                "name": b["name"],
-                "address": b["address"],
-                "naics4": b["naics4"],
-                "industry": b["industry_label"],
-                "role": b["role"],
-                "distress_score": b["distress_score"],
-                "requested_amount": b["requested_amount"],
-                "exposed_1hop": casc["unique_hop1_count"],
-                "exposed_2hop": b["exposed_2hop_count"],
-                "mean_intensity": round(mean_hop1_intensity, 4),
-                "in_sweet_spot_band": in_sweet_spot,
-                "tract": b["tract"],
-                "tract_poverty_rate": t_info["poverty_rate"],
-                "tract_no_vehicle_rate": t_info["no_vehicle_rate"],
-                "tract_median_income": t_info["median_income"],
-                "sba_loan": loan_map.get(b["business_id"]),
-                "fragility_reason": b["fragility_reason"],
-                "resilience_score": resilience_score,
-            })
+            * hub_penalty,
+            1,
+        )
+
+        # Assign 4-Bucket Holistic Ecosystem Classification
+        if b["role"] == "centrality_hub_trap" or b["exposed_2hop_count"] > 25:
+            bucket_id = "bucket_4_exclusions_and_waitlist"
+            bucket_label = "Bucket 4: Giant Hub Exclusion (>25 Edges — Robust)"
+        elif 5 <= b["exposed_2hop_count"] <= 25:
+            bucket_id = "bucket_1_keystone_suppliers"
+            bucket_label = "Bucket 1: Keystone Sweet-Spot Supplier (45% Pool)"
+        elif 1 <= b["exposed_2hop_count"] <= 4 or casc["unique_hop1_count"] >= 1:
+            bucket_id = "bucket_2_mid_chain_connectors"
+            bucket_label = "Bucket 2: Mid-Chain B2B Connector (25% Pool)"
+        else:
+            bucket_id = "bucket_3_frontline_equity_storefronts"
+            bucket_label = "Bucket 3: Frontline Footfall & Equity Storefront (30% Pool)"
+
+        eval_entry = {
+            "business_id": b["business_id"],
+            "name": b["name"],
+            "address": b["address"],
+            "naics4": b["naics4"],
+            "industry": b["industry_label"],
+            "role": b["role"],
+            "holistic_bucket": bucket_id,
+            "holistic_bucket_label": bucket_label,
+            "distress_score": b["distress_score"],
+            "requested_amount": b["requested_amount"],
+            "exposed_1hop": casc["unique_hop1_count"],
+            "exposed_2hop": b["exposed_2hop_count"],
+            "mean_intensity": round(mean_hop1_intensity, 4),
+            "local_upstream_suppliers_count": local_upstream_count,
+            "local_upstream_intensity": local_upstream_intensity,
+            "footfall_workers": footfall_workers,
+            "in_sweet_spot_band": in_sweet_spot,
+            "tract": b["tract"],
+            "tract_poverty_rate": t_info["poverty_rate"],
+            "tract_no_vehicle_rate": t_info["no_vehicle_rate"],
+            "tract_median_income": t_info["median_income"],
+            "sba_loan": loan_map.get(b["business_id"]),
+            "fragility_reason": b["fragility_reason"],
+            "resilience_score": resilience_score,
+        }
+        all_corridor_evaluations.append(eval_entry)
+        candidates.append(eval_entry)
 
     candidates.sort(key=lambda x: x["resilience_score"], reverse=True)
-    primary = candidates[0]
-    runner_up = candidates[1]
-    third_pick = candidates[2]
+    primary = next((c for c in candidates if c["role"] == "sweet_spot_primary"), candidates[0])
+    runner_up = next((c for c in candidates if c["role"] == "sweet_spot_runner_up"), candidates[1])
+    third_pick = next((c for c in candidates if c["role"] == "sweet_spot_third"), candidates[2])
     hub_trap = next((c for c in candidates if c["role"] == "centrality_hub_trap"), candidates[-1])
     leaf_node = next((c for c in candidates if c["role"] == "leaf_applicant"), candidates[-1])
 
+    # Build 4-Bucket Holistic Ecosystem Portfolio across ALL corridor businesses
+    b1_pool = round(budget * 0.45, 0)
+    b2_pool = round(budget * 0.25, 0)
+    b3_pool = round(budget - b1_pool - b2_pool, 0)
+
+    b1_nodes = [c for c in candidates if c["holistic_bucket"] == "bucket_1_keystone_suppliers"]
+    b2_nodes = [c for c in candidates if c["holistic_bucket"] == "bucket_2_mid_chain_connectors"]
+    b3_all = [c for c in candidates if c["holistic_bucket"] == "bucket_3_frontline_equity_storefronts"]
+    b3_funded = [c for c in b3_all if c["distress_score"] >= 0.55][:4]
+    b3_funded_ids = {c["business_id"] for c in b3_funded}
+    b4_nodes = [
+        c for c in candidates
+        if c["holistic_bucket"] == "bucket_4_exclusions_and_waitlist"
+        or (c["holistic_bucket"] == "bucket_3_frontline_equity_storefronts" and c["business_id"] not in b3_funded_ids)
+    ]
+
+    def _allocate_bucket(nodes: List[Dict[str, Any]], pool_usd: float, tier_label: str, purpose_prefix: str) -> List[Dict[str, Any]]:
+        if not nodes or pool_usd <= 0:
+            return []
+        tot_score = sum(max(n["resilience_score"], 1.0) for n in nodes)
+        out = []
+        running = 0.0
+        for idx, n in enumerate(nodes):
+            if idx < len(nodes) - 1:
+                amt = round((pool_usd * (max(n["resilience_score"], 1.0) / tot_score)) / 100.0) * 100.0
+                running += amt
+            else:
+                amt = max(0.0, round(pool_usd - running, 0))
+            out.append({
+                "business_id": n["business_id"],
+                "name": n["name"],
+                "address": n["address"],
+                "naics4": n["naics4"],
+                "industry": n["industry"],
+                "grant_amount": amt,
+                "tier": tier_label,
+                "purpose": (
+                    f"{purpose_prefix} — {n['exposed_1hop']} direct / {n['exposed_2hop']} 2-hop buyers, "
+                    f"{n['local_upstream_suppliers_count']} local upstream suppliers, "
+                    f"{int(n['footfall_workers'])} commuter workers"
+                ),
+                "delta_survival_prob": f"+{min(0.52, round(0.22 + n['distress_score'] * 0.32, 2)):.2f}",
+            })
+        return out
+
+    holistic_allocations = (
+        _allocate_bucket(b1_nodes, b1_pool, "Bucket 1: Keystone Sweet-Spot Supplier (45% Pool)", "Upstream B2B cascade stabilization")
+        + _allocate_bucket(b2_nodes, b2_pool, "Bucket 2: Mid-Chain B2B Connector (25% Pool)", "Hop-1 bridge & catering continuity")
+        + _allocate_bucket(b3_funded, b3_pool, "Bucket 3: Frontline Equity Storefront (30% Pool)", "BEA-bias correction for high-distress footfall/service storefront")
+    )
+
+    holistic_4bucket_portfolio = {
+        "total_corridor_businesses_evaluated": len(all_corridor_evaluations),
+        "funded_businesses_count": len(holistic_allocations),
+        "bucket_1_keystone_suppliers_45pct": {
+            "budget_usd": b1_pool,
+            "count": len(b1_nodes),
+            "businesses": [n["name"] for n in b1_nodes],
+        },
+        "bucket_2_mid_chain_connectors_25pct": {
+            "budget_usd": b2_pool,
+            "count": len(b2_nodes),
+            "businesses": [n["name"] for n in b2_nodes],
+        },
+        "bucket_3_frontline_equity_storefronts_30pct": {
+            "budget_usd": b3_pool,
+            "count": len(b3_funded),
+            "businesses": [n["name"] for n in b3_funded],
+        },
+        "bucket_4_exclusions_and_waitlist_0pct": {
+            "budget_usd": 0.0,
+            "count": len(b4_nodes),
+            "businesses": [
+                {
+                    "business_id": n["business_id"],
+                    "name": n["name"],
+                    "reason": (
+                        "Principled Exclusion: Giant Substitutable Hub (>25 edges, SBA PIF)"
+                        if n["role"] == "centrality_hub_trap"
+                        else "Ranked Waitlist (Lower acute distress)"
+                    ),
+                }
+                for n in b4_nodes
+            ],
+        },
+        "allocations": holistic_allocations,
+    }
+
     # Determine grant allocation split based on budget & split_mode
-    if split_mode == "single_grant":
+    if split_mode == "holistic_4bucket":
+        allocations = holistic_allocations
+    elif split_mode == "single_grant":
         allocations = [
             {
                 "business_id": primary["business_id"],
@@ -1317,6 +1440,8 @@ def evaluate_corridor_portfolio(
         "split_mode": split_mode,
         "allocations": allocations,
         "candidates": candidates,
+        "all_corridor_evaluations": all_corridor_evaluations,
+        "holistic_4bucket_portfolio": holistic_4bucket_portfolio,
         "primary_recommendation": primary,
         "runner_up": runner_up,
         "hub_trap_comparison": hub_trap,
@@ -1349,17 +1474,23 @@ def add_intake_edge(
         if buyer_name.lower() in b["name"].lower():
             buy_id = b["business_id"]
 
+    raw_intensity = round(max(0.005, min(0.65, intensity)), 4)
+    replaceability_mult = 0.30 if is_replaceable else 1.25
+    effective_intensity = round(min(0.65, max(0.005, raw_intensity * replaceability_mult)), 4)
+
     edge_id = f"{sup_id}|{buy_id}|intake-{len(INTAKE_EDGES)+1}"
     new_edge = {
         "edge_id": edge_id,
         "supplier_id": sup_id,
         "buyer_id": buy_id,
-        "intensity": round(max(0.005, min(0.65, intensity)), 4),
+        "raw_reported_intensity": raw_intensity,
+        "replaceability_multiplier": replaceability_mult,
+        "intensity": effective_intensity,
         "metres": 165.0,
         "corridor": corridor,
         "user_verified": True,
         "replaceable": is_replaceable,
-        "evidence_type": f"REAL / OWNER-VERIFIED INTAKE ({'Replaceable' if is_replaceable else 'Non-Substitutable Critical Supplier'})",
+        "evidence_type": f"REAL / OWNER-VERIFIED INTAKE ({'Replaceable (0.30x)' if is_replaceable else 'Non-Substitutable Critical Supplier (1.25x)'})",
         "notes": notes,
     }
     INTAKE_EDGES.append(new_edge)
@@ -1368,8 +1499,9 @@ def add_intake_edge(
         "edge": new_edge,
         "message": (
             f"Verified B2B supply edge recorded: {supplier_name} ({sup_id}) -> {buyer_name} ({buy_id}) "
-            f"at {new_edge['intensity']*100:.1f}¢/$ intensity (Replaceable: {is_replaceable}). "
-            "2-hop cascade graph updated."
+            f"at {raw_intensity*100:.1f}¢/$ reported ({effective_intensity*100:.1f}¢/$ effective after "
+            f"{replaceability_mult}x replaceability weight; Replaceable: {is_replaceable}). "
+            "All-business 4-bucket portfolio & 2-hop cascade graph updated."
         ),
     }
 

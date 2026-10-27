@@ -151,7 +151,8 @@
           3. Budget Split Strategy (Co-Failure Defense)
         </label>
         <select id="split-select" onchange="refreshAnalysis()" class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm text-white font-medium outline-none">
-          <option value="split_two" selected>Split Portfolio: 2 Grants (64% Primary / 36% Co-Failure Shield)</option>
+          <option value="holistic_4bucket" selected>Holistic 4-Bucket All-Business Portfolio (45% Keystone / 25% Mid-Chain / 30% Frontline Equity)</option>
+          <option value="split_two">Split Portfolio: 2 Grants (64% Primary / 36% Co-Failure Shield)</option>
           <option value="single_grant">Single Anchor Grant: 100% to Top Upstream Node</option>
           <option value="split_three">Micro-Resilience Pool: 3 Grants (50% / 30% / 20%)</option>
         </select>
@@ -685,11 +686,14 @@
       const activeSeed = data.active_seed_id;
 
       const roleBadges = {
-        sweet_spot_primary: '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">★ Primary Pick (5..25 Band)</span>',
-        sweet_spot_runner_up: '<span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold">Runner-Up (Co-Fund Shield)</span>',
-        sweet_spot_third: '<span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Tier 3 Reserve</span>',
-        centrality_hub_trap: '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Giant Hub Trap (Robust)</span>',
-        leaf_applicant: '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">0-Cascade Leaf (BEA Bias)</span>'
+        sweet_spot_primary: '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">★ Bucket 1: Primary Keystone (45%)</span>',
+        sweet_spot_runner_up: '<span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold">Bucket 1: Runner-Up Keystone (45%)</span>',
+        sweet_spot_third: '<span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">Bucket 1: Tier 3 Keystone (45%)</span>',
+        hop1_bridge: '<span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">Bucket 2: Mid-Chain Bridge (25%)</span>',
+        hop1_buyer: '<span class="px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40">Bucket 2: Hop-1 Connector (25%)</span>',
+        hop2_exposed: '<span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">Bucket 3: Frontline Footfall Storefront (30%)</span>',
+        centrality_hub_trap: '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">⚠️ Bucket 4: Giant Hub Excluded (&gt;25)</span>',
+        leaf_applicant: '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">Bucket 3: High-Equity Leaf Storefront (30%)</span>'
       };
 
       data.portfolio.candidates.forEach(c => {

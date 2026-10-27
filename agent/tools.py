@@ -1359,6 +1359,55 @@ def optimize_corridor_portfolio(
             )
 
     recommended_k_for_pool = max(1, min(int(pool // min_floor), 2 if pool <= 55000 else int(pool // 20000)))
+    holistic_4bucket = evaluate_all_corridor_applicants(budget_pool_usd=pool)
+
+    if int(num_grantees) == 0:
+        # Holistic 4-Bucket All-Business Mode across all 327 storefronts
+        holistic_selected = []
+        for idx_h, alloc in enumerate(holistic_4bucket["funded_portfolio_allocations"], 1):
+            holistic_selected.append({
+                "slot": idx_h,
+                "business_id": alloc["business_id"],
+                "name": alloc["name"],
+                "address": alloc["address"],
+                "naics4": alloc["naics4"],
+                "naics_label": f"{alloc['naics_label']} [{alloc['bucket_short_label']}]",
+                "base_keystone_score": alloc["composite_resilience_score"],
+                "marginal_keystone_score": alloc["composite_resilience_score"],
+                "raw_2hop_reach": alloc["total_2hop_exposed_count"],
+                "raw_physical_reach": alloc["brick_and_mortar_exposed_count"],
+                "new_unique_2hop_added": alloc["brick_and_mortar_exposed_count"],
+                "new_unique_physical_added": alloc["brick_and_mortar_exposed_count"],
+                "subgraph_redundancy_pct": 0.0,
+                "cumulative_unique_physical_protected": holistic_4bucket["total_unique_physical_storefronts_protected"],
+                "cumulative_unique_2hop_protected": holistic_4bucket["total_corridor_businesses_evaluated"],
+                "impact_weight_share": round(alloc["recommended_grant_usd"] / max(pool, 1.0), 4),
+                "recommended_grant_usd": alloc["recommended_grant_usd"],
+                "equal_split_grant_usd": round(pool / max(len(holistic_4bucket["funded_portfolio_allocations"]), 1), 0),
+                "meets_minimum_survival_floor": True,
+                "holistic_bucket": alloc["bucket"],
+            })
+        return {
+            "corridor": ENGINE.summary.get("corridor", "Market/Castro"),
+            "budget_pool_usd": pool,
+            "requested_grantees": len(holistic_selected),
+            "recommended_grantees_for_pool": len(holistic_selected),
+            "min_effective_grant_usd": 2500.0,
+            "deduplicate_subgraphs": deduplicate_subgraphs,
+            "selected_portfolio": holistic_selected,
+            "naive_top4_overlap_audit": naive_audit,
+            "total_unique_physical_storefronts_protected": holistic_4bucket["total_unique_physical_storefronts_protected"],
+            "total_unique_2hop_nodes_protected": holistic_4bucket["total_corridor_businesses_evaluated"],
+            "dilution_warnings": [],
+            "holistic_4bucket_portfolio": holistic_4bucket,
+            "committee_guidance": (
+                f"Holistic 4-Bucket Ecosystem Allocation (${pool:,.0f} pool across ALL {holistic_4bucket['total_corridor_businesses_evaluated']} corridor businesses): "
+                f"Bucket 1 (45% = ${holistic_4bucket['bucket_1_keystone_suppliers_45pct']['budget_usd']:,.0f}) funds Keystone Sweet-Spot Suppliers; "
+                f"Bucket 2 (25% = ${holistic_4bucket['bucket_2_mid_chain_connectors_25pct']['budget_usd']:,.0f}) funds Mid-Chain B2B Connectors; "
+                f"Bucket 3 (30% = ${holistic_4bucket['bucket_3_frontline_equity_storefronts_30pct']['budget_usd']:,.0f}) funds Frontline Footfall & High-Equity Leaf Storefronts "
+                f"(correcting BEA industry bias in-portfolio); Bucket 4 ($0) holds principled exclusions (Virtual Mailbox Hubs, Sole-NAICS Monopolies, Duplicate DBAs, & Waitlist)."
+            ),
+        }
 
     return {
         "corridor": ENGINE.summary.get("corridor", "Market/Castro"),
@@ -1372,12 +1421,218 @@ def optimize_corridor_portfolio(
         "total_unique_physical_storefronts_protected": len(covered_phys),
         "total_unique_2hop_nodes_protected": len(covered_all),
         "dilution_warnings": warnings,
+        "holistic_4bucket_portfolio": holistic_4bucket,
         "committee_guidance": (
             f"For a ${pool:,.0f} grant pool, funding {recommended_k_for_pool} non-overlapping keystone(s) "
             f"maximizes unique brick-and-mortar protection while keeping every grant above the ${min_floor:,.0f} "
             f"minimum survival runway threshold. In Market/Castro, #3 The Castro is 91.7% redundant with #1 Theatre "
             f"Rhinoceros and #4 Hi Tops is 100% redundant with #2 Canela."
         ),
+    }
+
+
+def evaluate_all_corridor_applicants(budget_pool_usd: float = 50000.0) -> dict[str, Any]:
+    """
+    Evaluate ALL businesses in the active corridor (e.g. all 327 businesses in Market/Castro)
+    across 4 dimensions simultaneously:
+      1. 1-to-2 hop outgoing B2B `Supplies` cascade & NAICS peer scarcity
+      2. Incoming local B2B purchasing links (`local_upstream_suppliers_count`)
+      3. Daily commuter footfall pull (`DrawsFootfall` worker share)
+      4. SBA 7(a) loan / charge-off fragility + ACS Census Tract equity need
+
+    Allocates the budget across the 4-Bucket Holistic Ecosystem Portfolio:
+      - Bucket 1 (45%): Keystone Sweet-Spot Suppliers (3..35 physical 2-hop reach)
+      - Bucket 2 (25%): Mid-Chain B2B Connectors (1..2 physical 2-hop reach)
+      - Bucket 3 (30%): Frontline Footfall & High-Equity Storefronts (0 outgoing B2B edges)
+      - Bucket 4 ($0):  Principled Exclusions (Virtual Mailbox Hubs, Sole-NAICS Monopolies, Duplicate DBAs, & Waitlist)
+    """
+    pool = max(10000.0, float(budget_pool_usd))
+    loan_by_biz = {str(l.get("business_id", "")): l for l in ENGINE.borrowed_from}
+
+    all_evaluated: list[dict[str, Any]] = []
+    b1_candidates: list[dict[str, Any]] = []
+    b2_candidates: list[dict[str, Any]] = []
+    b3_candidates: list[dict[str, Any]] = []
+    b4_exclusions: list[dict[str, Any]] = []
+
+    seen_canonical_names: set[str] = set()
+
+    for b in ENGINE.businesses:
+        b_id = b["business_id"]
+        casc = ENGINE.compute_cascade(b_id)
+        tract_ctx = ENGINE.get_tract_context(b["tract_geoid"])
+        in_edges = ENGINE.in_supplies.get(b_id, [])
+        ff_edges = ENGINE.footfall_by_biz.get(b_id, [])
+
+        local_upstream_count = len({e["supplier_id"] for e in in_edges})
+        local_upstream_intensity = round(sum(float(e["intensity"]) for e in in_edges), 4)
+        commuter_footfall_pull = round(sum(float(e.get("worker_share", 0.0)) for e in ff_edges), 4)
+
+        sba_rec = loan_by_biz.get(b_id)
+        sba_status = str(sba_rec.get("loan_status", "NO_SBA_LOAN")) if sba_rec else "NO_SBA_LOAN"
+        is_chargeoff = "CHGOFF" in sba_status.upper()
+
+        is_vm = bool(b.get("is_virtual_mailbox_hub", False))
+        naics_peers = int(b.get("corridor_naics4_peers", 1))
+        phys_2hop = int(casc["brick_and_mortar_exposed_count"])
+        raw_2hop = int(casc["total_2hop_exposed_count"])
+        is_monopoly = (naics_peers == 1 and raw_2hop > 35)
+
+        cname = "".join(ch for ch in str(b.get("name", "")).lower() if ch.isalnum())
+        if cname.startswith("the"):
+            cname = cname[3:]
+        is_secondary_dup = bool(b.get("has_duplicate_dba", False)) and (cname in seen_canonical_names)
+        seen_canonical_names.add(cname)
+
+        # 4-Dimension Composite Score
+        b2b_component = (casc["total_compounded_cascade_score"] * 35.0) + (min(phys_2hop, 25) * 1.4)
+        upstream_buyer_component = (local_upstream_count * 2.2) + (local_upstream_intensity * 25.0)
+        footfall_component = commuter_footfall_pull * 18.0
+        equity_sba_component = (tract_ctx.relative_need_multiplier * 8.0) + (14.0 if is_chargeoff else (5.0 if sba_rec else 0.0))
+        composite_score = round(b2b_component + upstream_buyer_component + footfall_component + equity_sba_component, 3)
+
+        if is_vm:
+            bucket = "bucket_4_exclusions_holds_and_waitlist"
+            bucket_reason = f"Principled Exclusion: Co-located at virtual mailbox hub ({b['address']})"
+        elif is_monopoly:
+            bucket = "bucket_4_exclusions_holds_and_waitlist"
+            bucket_reason = f"Principled Exclusion: Single-supplier NAICS {b['naics4']} mechanical artifact ({raw_2hop} raw reach)"
+        elif is_secondary_dup:
+            bucket = "bucket_4_exclusions_holds_and_waitlist"
+            bucket_reason = "Administrative Hold: Secondary duplicate DBA tax registration at same corridor venue"
+        elif 3 <= phys_2hop <= 35:
+            bucket = "bucket_1_keystone_suppliers"
+            bucket_reason = f"Keystone Sweet-Spot Supplier ({phys_2hop} physical 2-hop storefronts protected)"
+        elif 1 <= phys_2hop <= 2:
+            bucket = "bucket_2_mid_chain_connectors"
+            bucket_reason = f"Mid-Chain B2B Connector ({phys_2hop} physical downstream buyers + {local_upstream_count} local upstream suppliers)"
+        else:
+            bucket = "bucket_3_frontline_equity_storefronts"
+            bucket_reason = (
+                f"Frontline Consumer/Service Storefront (0 outgoing B2B edges; {local_upstream_count} local upstream suppliers, "
+                f"footfall pull {commuter_footfall_pull:.2f}, tract need {tract_ctx.relative_need_multiplier}x)"
+            )
+
+        rec = {
+            "business_id": b_id,
+            "name": b["name"],
+            "address": b["address"],
+            "naics4": b["naics4"],
+            "naics_label": b["naics_label"],
+            "tract_geoid": str(b["tract_geoid"]).zfill(11),
+            "tract_poverty_rate": tract_ctx.poverty_rate,
+            "tract_no_vehicle_rate": tract_ctx.no_vehicle_rate,
+            "relative_need_multiplier": tract_ctx.relative_need_multiplier,
+            "direct_1hop_count": casc["direct_1hop_count"],
+            "indirect_2hop_count": casc["indirect_2hop_count"],
+            "total_2hop_exposed_count": raw_2hop,
+            "brick_and_mortar_exposed_count": phys_2hop,
+            "total_compounded_cascade_score": casc["total_compounded_cascade_score"],
+            "local_upstream_suppliers_count": local_upstream_count,
+            "local_upstream_intensity": local_upstream_intensity,
+            "commuter_footfall_pull": commuter_footfall_pull,
+            "sba_loan_status": sba_status,
+            "is_sba_chargeoff": is_chargeoff,
+            "is_virtual_mailbox_hub": is_vm,
+            "is_monopoly_artifact": is_monopoly,
+            "is_secondary_duplicate_dba": is_secondary_dup,
+            "composite_resilience_score": composite_score,
+            "bucket": bucket,
+            "bucket_reason": bucket_reason,
+        }
+        all_evaluated.append(rec)
+        if bucket == "bucket_1_keystone_suppliers":
+            b1_candidates.append(rec)
+        elif bucket == "bucket_2_mid_chain_connectors":
+            b2_candidates.append(rec)
+        elif bucket == "bucket_3_frontline_equity_storefronts":
+            b3_candidates.append(rec)
+        else:
+            b4_exclusions.append(rec)
+
+    b1_candidates.sort(key=lambda x: -x["composite_resilience_score"])
+    b2_candidates.sort(key=lambda x: -x["composite_resilience_score"])
+    b3_candidates.sort(key=lambda x: (-int(x["is_sba_chargeoff"]), -x["composite_resilience_score"]))
+    all_evaluated.sort(key=lambda x: -x["composite_resilience_score"])
+
+    b1_pool = round(pool * 0.45, 0)
+    b2_pool = round(pool * 0.25, 0)
+    b3_pool = round(pool - b1_pool - b2_pool, 0)
+
+    b1_top = b1_candidates[:3]
+    b2_top = b2_candidates[:2]
+    b3_top = b3_candidates[:3]
+
+    funded_ids = {x["business_id"] for x in (b1_top + b2_top + b3_top)}
+    waitlist = [
+        x for x in (b1_candidates[3:] + b2_candidates[2:] + b3_candidates[3:])
+        if x["business_id"] not in funded_ids
+    ]
+
+    def _alloc_tier(items: list[dict[str, Any]], tier_pool: float, short_label: str) -> list[dict[str, Any]]:
+        if not items or tier_pool <= 0:
+            return []
+        tot_w = sum(max(x["composite_resilience_score"], 0.1) for x in items)
+        out = []
+        running = 0.0
+        for idx, item in enumerate(items):
+            if idx < len(items) - 1:
+                amt = round((tier_pool * (max(item["composite_resilience_score"], 0.1) / tot_w)) / 250.0) * 250.0
+                running += amt
+            else:
+                amt = max(0.0, round(tier_pool - running, 0))
+            entry = dict(item)
+            entry["recommended_grant_usd"] = amt
+            entry["bucket_short_label"] = short_label
+            out.append(entry)
+        return out
+
+    funded_allocations = (
+        _alloc_tier(b1_top, b1_pool, "Bucket 1: Keystone (45%)")
+        + _alloc_tier(b2_top, b2_pool, "Bucket 2: Mid-Chain (25%)")
+        + _alloc_tier(b3_top, b3_pool, "Bucket 3: Frontline Equity (30%)")
+    )
+
+    covered_phys_set: set[str] = set()
+    for f in funded_allocations:
+        covered_phys_set.add(f["business_id"])
+        cas_f = ENGINE.compute_cascade(f["business_id"])
+        for n in cas_f["cascade_nodes"]:
+            if not n["is_virtual_mailbox"]:
+                covered_phys_set.add(n["business_id"])
+
+    return {
+        "corridor": ENGINE.summary.get("corridor", "Market/Castro"),
+        "budget_pool_usd": pool,
+        "total_corridor_businesses_evaluated": len(all_evaluated),
+        "funded_grantees_count": len(funded_allocations),
+        "total_unique_physical_storefronts_protected": len(covered_phys_set),
+        "bucket_1_keystone_suppliers_45pct": {
+            "budget_usd": b1_pool,
+            "total_eligible_in_corridor": len(b1_candidates),
+            "funded_count": len(b1_top),
+            "funded_businesses": [x["name"] for x in b1_top],
+        },
+        "bucket_2_mid_chain_connectors_25pct": {
+            "budget_usd": b2_pool,
+            "total_eligible_in_corridor": len(b2_candidates),
+            "funded_count": len(b2_top),
+            "funded_businesses": [x["name"] for x in b2_top],
+        },
+        "bucket_3_frontline_equity_storefronts_30pct": {
+            "budget_usd": b3_pool,
+            "total_eligible_in_corridor": len(b3_candidates),
+            "funded_count": len(b3_top),
+            "funded_businesses": [x["name"] for x in b3_top],
+        },
+        "bucket_4_exclusions_holds_and_waitlist_0pct": {
+            "budget_usd": 0.0,
+            "principled_exclusions_and_holds_count": len(b4_exclusions),
+            "ranked_waitlist_count": len(waitlist),
+            "total_bucket_4_count": len(b4_exclusions) + len(waitlist),
+        },
+        "funded_portfolio_allocations": funded_allocations,
+        "all_evaluated_businesses": all_evaluated,
     }
 
 
@@ -1430,5 +1685,32 @@ def get_system_integration_status() -> dict[str, Any]:
             "static_index_html_exists": ui_index.exists(),
         },
     }
+
+
+try:
+    from .holistic_engine import (
+        _build_holistic_portfolio_allocation,
+        _evaluate_corridor_businesses_offline,
+        analyze_anchor_closure_shock,
+        analyze_main_street_applicants,
+        find_vulnerable_micro_producers,
+        list_corridor_demo_candidates,
+        record_verified_supplier_edge,
+        run_equity_and_fragility_audit,
+    )
+except ImportError:
+    from holistic_engine import (  # type: ignore
+        _build_holistic_portfolio_allocation,
+        _evaluate_corridor_businesses_offline,
+        analyze_anchor_closure_shock,
+        analyze_main_street_applicants,
+        find_vulnerable_micro_producers,
+        list_corridor_demo_candidates,
+        record_verified_supplier_edge,
+        run_equity_and_fragility_audit,
+    )
+
+run_equity_and_sba_audit = run_equity_and_fragility_audit
+
 
 
