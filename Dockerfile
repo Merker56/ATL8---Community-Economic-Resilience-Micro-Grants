@@ -31,7 +31,7 @@ ENV PORT=8080 \
     BQ_GRAPH="LocalEconomy"
 
 # Build-time E2E sanity gate across Member 1 + Member 2 + Member 3 contracts
-RUN python3 -m unittest tests/test_member2_e2e.py
+RUN ENABLE_LIVE_GEMINI_CHAT=false python3 -m unittest tests/test_member2_e2e.py
 
 EXPOSE 8080
 

@@ -435,12 +435,42 @@ def _answer_officer_question_deterministically(req: ChatRequest) -> str:
 
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest):
+    # 1. Route Market/Castro multi-agent workflow or specific Market/Castro business queries
+    # directly to the 3-Sub-Agent Market/Castro orchestrator so structured tool_called,
+    # sub_agent_routed, and data payloads are always returned deterministically.
+    low_msg = (req.message or "").lower()
+    if mc_handle_post is not None and (
+        req.corridor in ("market-castro", "Market/Castro")
+        or any(
+            k in low_msg
+            for k in (
+                "end-to-end",
+                "end to end",
+                "workflow",
+                "sub-agent",
+                "multi-agent",
+                "rhinoceros",
+                "canela",
+                "du nord",
+                "2261 market",
+                "primo",
+                "castro station",
+            )
+        )
+    ):
+        _, mc_res = mc_handle_post("/api/chat", {"message": req.message})
+        return {
+            **mc_res,
+            "engine": "adk-graph-tool-engine",
+            "session_id": req.session_id or "demo-session",
+        }
+
     has_llm_creds = bool(
         os.environ.get("GOOGLE_API_KEY")
         or os.environ.get("GEMINI_API_KEY")
         or os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1")
     )
-    # Try ADK Runner with Gemini first if credentials are configured in Cloud Run
+    # 2. Try ADK Runner with Gemini if credentials are configured in Cloud Run
     if (
         root_agent is not None
         and has_llm_creds
@@ -490,36 +520,7 @@ async def chat_with_agent(req: ChatRequest):
         except Exception:
             pass
 
-    # If the user is querying the Market/Castro multi-agent workflow or specific Market/Castro businesses,
-    # include the structured Market/Castro tool data payload as well.
-    low_msg = (req.message or "").lower()
-    if mc_handle_post is not None and (
-        req.corridor == "market-castro"
-        or any(
-            k in low_msg
-            for k in (
-                "end-to-end",
-                "end to end",
-                "workflow",
-                "sub-agent",
-                "multi-agent",
-                "rhinoceros",
-                "canela",
-                "du nord",
-                "2261 market",
-                "primo",
-                "castro station",
-            )
-        )
-    ):
-        _, mc_res = mc_handle_post("/api/chat", {"message": req.message})
-        return {
-            **mc_res,
-            "engine": "adk-graph-tool-engine",
-            "session_id": req.session_id or "demo-session",
-        }
-
-    # Instant deterministic graph-grounded response fallback
+    # 3. Instant deterministic graph-grounded response fallback
     reply = _answer_officer_question_deterministically(req)
     return {
         "reply": reply,
