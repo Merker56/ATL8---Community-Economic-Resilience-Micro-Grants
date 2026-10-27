@@ -4,6 +4,20 @@
 -- File: sql/01_create_property_graph.sql
 -- ============================================================================
 --
+-- Property Graph Schema (`a4i_econ.LocalEconomy`):
+--   Node Tables (2):
+--     1. `businesses` (KEY (business_id)): 327 active privacy-filtered storefronts across 62 NAICS4 industries.
+--     2. `employer_blocks` (KEY (block_id)): 10 LODES 8 workplace Census blocks totaling 1,842 storefront jobs (5,041 total WAC jobs).
+--   Edge Tables (3):
+--     1. `supplies` (SOURCE KEY (supplier_id) REFERENCES businesses, DESTINATION KEY (buyer_id) REFERENCES businesses):
+--        1,199 directed edges (gravity_intensity = bea_use_share * exp(-metres / 500)).
+--     2. `draws_footfall_from` (SOURCE KEY (business_id) REFERENCES businesses, DESTINATION KEY (block_id) REFERENCES employer_blocks):
+--        677 gravity-weighted footfall edges.
+--     3. `borrowed_from` (SOURCE KEY (business_id) REFERENCES businesses, DESTINATION KEY (block_id) REFERENCES employer_blocks):
+--        9 historical SBA 7(a) loans (2 verified charge-offs).
+--   Relational Join Table (1):
+--     1. `tract_demographics`: 8 ACS 5-Year Census Tracts joined via LPAD(CAST(geo_id AS STRING), 11, '0').
+--
 -- Pre-Flight Checklist (The 7 BigQuery Property Graph Traps):
 --   1. In NODE TABLES and EDGE TABLES, write `a4i_econ.businesses`
 --      DATASET-QUALIFIED and UNBACKTICKED. Do NOT wrap a 3-part name in backticks.
@@ -16,13 +30,43 @@
 --      is FLOAT64. Never expose both as `jobs`.
 -- ============================================================================
 
--- Step 0: Optional schema extension on `a4i_econ.supplies` to support the
--- +10 Bonus Conversational Merchant Supplier Intake tool (`is_verified`, `edge_origin`).
+-- Step 0A: Idempotent schema enrichment on `a4i_econ.businesses` for tract & hygiene flags
+ALTER TABLE `a4i_econ.businesses`
+  ADD COLUMN IF NOT EXISTS tract_geoid STRING,
+  ADD COLUMN IF NOT EXISTS is_virtual_mailbox_hub BOOL,
+  ADD COLUMN IF NOT EXISTS corridor_naics4_peers INT64;
+
+-- Step 0B: Idempotent schema enrichment on `a4i_econ.employer_blocks` for corridor storefront jobs (1,842 total)
+ALTER TABLE `a4i_econ.employer_blocks`
+  ADD COLUMN IF NOT EXISTS corridor_storefront_jobs INT64;
+
+-- Step 0C: Idempotent schema enrichment on `a4i_econ.supplies` for +10 Bonus Merchant Intake & distance-decay intensity
 ALTER TABLE `a4i_econ.supplies`
+  ADD COLUMN IF NOT EXISTS bea_use_share FLOAT64,
+  ADD COLUMN IF NOT EXISTS gravity_intensity FLOAT64,
   ADD COLUMN IF NOT EXISTS edge_origin STRING,
   ADD COLUMN IF NOT EXISTS is_verified BOOL;
 
--- Step 1: Declare the Property Graph over the loaded Market/Castro tables.
+UPDATE `a4i_econ.supplies`
+SET
+  bea_use_share = COALESCE(bea_use_share, intensity),
+  gravity_intensity = COALESCE(gravity_intensity, ROUND(intensity * EXP(-metres / 500.0), 6)),
+  edge_origin = COALESCE(edge_origin, 'MODELED_BEA'),
+  is_verified = COALESCE(is_verified, FALSE)
+WHERE edge_origin IS NULL OR is_verified IS NULL OR gravity_intensity IS NULL;
+
+-- Step 0D: Idempotent schema enrichment on `a4i_econ.draws_footfall_from` for gravity-weighted footfall
+ALTER TABLE `a4i_econ.draws_footfall_from`
+  ADD COLUMN IF NOT EXISTS gravity_weight FLOAT64,
+  ADD COLUMN IF NOT EXISTS gravity_worker_share FLOAT64;
+
+-- Step 0E: Idempotent schema enrichment on `a4i_econ.borrowed_from` so SBA 7(a) loans have `edge_id` & `block_id`
+ALTER TABLE `a4i_econ.borrowed_from`
+  ADD COLUMN IF NOT EXISTS edge_id STRING,
+  ADD COLUMN IF NOT EXISTS block_id STRING,
+  ADD COLUMN IF NOT EXISTS metres FLOAT64;
+
+-- Step 1: Declare the Property Graph over the 2 Node Tables and 3 Edge Tables.
 CREATE OR REPLACE PROPERTY GRAPH a4i_econ.LocalEconomy
   NODE TABLES (
     a4i_econ.businesses
@@ -38,15 +82,19 @@ CREATE OR REPLACE PROPERTY GRAPH a4i_econ.LocalEconomy
         naics4,
         corridor,
         latitude,
-        longitude
+        longitude,
+        tract_geoid,
+        is_virtual_mailbox_hub,
+        corridor_naics4_peers
       ),
     a4i_econ.employer_blocks
       KEY (block_id)
-      LABEL Employer
+      LABEL EmployerBlock
       PROPERTIES (
         block_id,
         tract,
         jobs,
+        corridor_storefront_jobs,
         lat,
         lon
       )
@@ -59,17 +107,37 @@ CREATE OR REPLACE PROPERTY GRAPH a4i_econ.LocalEconomy
       LABEL Supplies
       PROPERTIES (
         edge_id,
+        bea_use_share,
         intensity,
-        metres
+        gravity_intensity,
+        metres,
+        edge_origin,
+        is_verified
       ),
     a4i_econ.draws_footfall_from
       KEY (edge_id)
-      SOURCE KEY (block_id) REFERENCES employer_blocks (block_id)
-      DESTINATION KEY (business_id) REFERENCES businesses (business_id)
+      SOURCE KEY (business_id) REFERENCES businesses (business_id)
+      DESTINATION KEY (block_id) REFERENCES employer_blocks (block_id)
       LABEL DrawsFootfall
       PROPERTIES (
         edge_id,
         worker_share,
+        gravity_weight,
+        gravity_worker_share,
+        metres
+      ),
+    a4i_econ.borrowed_from
+      KEY (edge_id)
+      SOURCE KEY (business_id) REFERENCES businesses (business_id)
+      DESTINATION KEY (block_id) REFERENCES employer_blocks (block_id)
+      LABEL BorrowedFrom
+      PROPERTIES (
+        edge_id,
+        bank_name,
+        gross_approval,
+        approval_date,
+        loan_status,
+        charged_off,
         metres
       )
   );

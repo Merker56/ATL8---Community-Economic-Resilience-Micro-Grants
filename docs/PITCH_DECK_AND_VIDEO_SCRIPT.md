@@ -24,7 +24,7 @@
 * **Key Proof Points from `Market/Castro`:**
   - **Virtual Mailbox Hub Filter:** Caught `140` filings at `2261 Market St` and `21` at `584 Castro St` that use bare 4-digit PMB numbers (`2261 Market Street 4303`) to evade standard `apt|ste|unit|#` regexes.
   - **Path-Level Purity Audit:** Proved why **Cafe Du Nord** (`2174 Market St E`, `28` raw 2-hop reach) drops to `#15`: `5 of its 6` direct Hop-1 buyers and `23 of its 28` total 2-hop nodes (`82%`) are virtual mailbox entities at `2261 Market St`!
-  - **Entity Resolution & Ground Truth:** Linked duplicate DBAs (`The Castro` at `429` & `449 Castro St`, `Mudpuppy's`, `Midnight Sun`) and `2` verified SBA 7(a) charge-offs (`Castro Tarts Cafe And Bakery` `$50k` and `Jake's Castro Kitchen` `$85k`).
+  - **Entity Resolution & Ground Truth:** Linked duplicate DBAs (`The Castro` at `429` & `449 Castro St`, `Mudpuppy's`, `Midnight Sun`) and `2` verified SBA 7(a) charge-offs (`Castro Tarts Cafe And Bakery` `$50k` at `564 Castro St` and `Bay Cleaners 2` `$42k` at `2330 Market St`).
 
 ### Slide 4: The 7-Part Friday Committee Defense — Why `Theatre Rhinoceros` + `Canela`
 * **Headline:** Subgraph-Deduplicated Portfolio: Maximum Physical Reach, Zero Overlap, Full Survival Runway.

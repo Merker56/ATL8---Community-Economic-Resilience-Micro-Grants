@@ -49,6 +49,27 @@ ORDER BY representation_ratio DESC;
 
 
 -- ----------------------------------------------------------------------------
+-- AUDIT 1B: Single-Supplier NAICS4 Monopoly Artifact Check
+-- ----------------------------------------------------------------------------
+-- Identifies NAICS4 industries with only 1 supplier in Market/Castro that
+-- accumulate massive mechanical outgoing supply edges (e.g., Primo at 4201 18th St,
+-- NAICS 3121 Beverage Manufacturing with 76 direct buyers).
+SELECT
+  b.naics4,
+  COUNT(DISTINCT b.business_id) AS corridor_suppliers_in_naics4,
+  ANY_VALUE(b.business_id) AS sample_business_id,
+  ANY_VALUE(b.name) AS sample_business_name,
+  ANY_VALUE(b.address) AS sample_address,
+  COUNT(s.edge_id) AS outgoing_supply_edges,
+  ROUND(SUM(s.intensity), 4) AS total_1hop_intensity
+FROM `a4i_econ.businesses` b
+LEFT JOIN `a4i_econ.supplies` s ON s.supplier_id = b.business_id
+GROUP BY b.naics4
+HAVING COUNT(DISTINCT b.business_id) = 1 AND COUNT(s.edge_id) >= 10
+ORDER BY outgoing_supply_edges DESC;
+
+
+-- ----------------------------------------------------------------------------
 -- AUDIT 2A: Commercial Mail-Drop / Virtual Office Hub Detection
 -- ----------------------------------------------------------------------------
 -- Uncovers why 2261 Market St (140 entities) and 584 Castro St (21 entities)
@@ -83,35 +104,50 @@ ORDER BY registration_count DESC;
 
 
 -- ----------------------------------------------------------------------------
--- AUDIT 3: Census Tract Socioeconomic Vulnerability (with LPAD 11-char guard)
+-- AUDIT 3: Census Tract Socioeconomic Vulnerability & Storefront Join (LPAD 11-char)
 -- ----------------------------------------------------------------------------
--- Always apply `LPAD(geo_id, 11, '0')` to prevent California's leading '0' in
--- FIPS '06' from being stripped and silently failing the join.
+-- Joins `a4i_econ.tract_demographics` with `a4i_econ.businesses` via
+-- `LPAD(CAST(geo_id AS STRING), 11, '0')` to prevent California's leading '0'
+-- in FIPS '06' from being stripped and silently failing the relational join.
+WITH tract_storefronts AS (
+  SELECT
+    LPAD(CAST(tract_geoid AS STRING), 11, '0') AS tract_geoid,
+    COUNT(DISTINCT business_id) AS active_storefronts,
+    COUNTIF(NOT COALESCE(is_virtual_mailbox_hub, FALSE)) AS brick_and_mortar_storefronts
+  FROM `a4i_econ.businesses`
+  GROUP BY tract_geoid
+)
 SELECT
-  LPAD(CAST(geo_id AS STRING), 11, '0') AS tract_geoid,
-  ROUND(total_pop, 0) AS total_pop,
-  ROUND(median_income, 0) AS median_income,
-  ROUND(poverty_rate * 100, 1) AS poverty_pct,
-  ROUND(no_vehicle_rate * 100, 1) AS no_vehicle_pct,
-  ROUND(assistance_rate * 100, 1) AS public_assistance_pct,
+  LPAD(CAST(t.geo_id AS STRING), 11, '0') AS tract_geoid,
+  COALESCE(ts.active_storefronts, 0) AS active_storefronts,
+  COALESCE(ts.brick_and_mortar_storefronts, 0) AS brick_and_mortar_storefronts,
+  ROUND(t.total_pop, 0) AS total_pop,
+  ROUND(t.median_income, 0) AS median_income,
+  ROUND(t.poverty_rate * 100, 1) AS poverty_pct,
+  ROUND(t.no_vehicle_rate * 100, 1) AS no_vehicle_pct,
+  ROUND(t.assistance_rate * 100, 1) AS public_assistance_pct,
   ROUND(
-    (poverty_rate / AVG(poverty_rate) OVER ()) * 0.5 +
-    (no_vehicle_rate / AVG(no_vehicle_rate) OVER ()) * 0.3 +
-    (assistance_rate / AVG(assistance_rate) OVER ()) * 0.2,
+    (t.poverty_rate / AVG(t.poverty_rate) OVER ()) * 0.6 +
+    (t.no_vehicle_rate / AVG(t.no_vehicle_rate) OVER ()) * 0.4,
     2
   ) AS relative_need_multiplier
-FROM `a4i_econ.tract_demographics`
+FROM `a4i_econ.tract_demographics` t
+LEFT JOIN tract_storefronts ts
+  ON LPAD(CAST(t.geo_id AS STRING), 11, '0') = ts.tract_geoid
 ORDER BY relative_need_multiplier DESC;
 
 
 -- ----------------------------------------------------------------------------
--- AUDIT 4: Real SBA 7(a) Loan & Charge-Off Ground-Truth Check
+-- AUDIT 4: Real SBA 7(a) Loan & Charge-Off Ground-Truth Check (`borrowed_from`)
 -- ----------------------------------------------------------------------------
 SELECT
+  l.edge_id,
   b.business_id,
   b.name,
   b.address,
   b.naics4,
+  l.block_id AS nearest_employer_block_id,
+  e.jobs AS block_wac_jobs,
   l.bank_name,
   l.gross_approval,
   l.approval_date,
@@ -119,4 +155,5 @@ SELECT
   l.charged_off
 FROM `a4i_econ.borrowed_from` l
 JOIN `a4i_econ.businesses` b ON b.business_id = l.business_id
+LEFT JOIN `a4i_econ.employer_blocks` e ON e.block_id = l.block_id
 ORDER BY l.charged_off DESC, l.gross_approval DESC;

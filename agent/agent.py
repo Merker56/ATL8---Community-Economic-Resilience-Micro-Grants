@@ -403,7 +403,7 @@ def run_grant_officer_chat(user_message: str) -> dict[str, Any]:
                 "1. **Virtual Mailbox Hub Trap (`2261 Market St` & `584 Castro St`):** `140` active filings share `2261 Market St` and `21` share `584 Castro St` using bare 4-digit PMB numbers (`2261 Market Street 4303`) that evade standard `apt|ste|unit|#` regexes. Our agent flags and disqualifies these from storefront micro-grants.\n"
                 "2. **Single-Supplier Monopoly Trap (`Primo`, `1278368-05-211` at `4201 18th St`):** Appears to have `76` direct buyers (`95` two-hop reach) solely because it is the only NAICS `3121` (Beverage Manufacturing) business in the corridor.\n"
                 "3. **Duplicate Tax Filings Resolved:** `The Castro` (`429` & `449 Castro St`), `Mudpuppy's Tub & Scrub` (`536` & `538 Castro St`), `Midnight Sun` (`4067 18th St`), `The Edge` (`4149 18th St`), and `Beck's Motor Lodge` (`2222 Market St`).\n"
-                "4. **SBA 7(a) Ground Truth:** `9` historical SBA loans (`$1.37M`), including `2` verified charge-offs (`Castro Tarts Cafe And Bakery` at `564 Castro St` and `Jake's Castro Kitchen` at `2348 Market St`)."
+                "4. **SBA 7(a) Ground Truth:** `9` historical SBA loans (`$753,500`), including `2` verified charge-offs (`Castro Tarts Cafe And Bakery` at `564 Castro St` and `Bay Cleaners 2` at `2330 Market St`)."
             ),
             "data": res,
         }

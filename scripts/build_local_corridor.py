@@ -20,11 +20,13 @@ the Grant Officer Defense Console and ADK Agent.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import math
 import os
 import re
+import subprocess
 import urllib.parse
 import urllib.request
 from collections import Counter, defaultdict
@@ -210,17 +212,19 @@ MARKET_CASTRO_TRACTS = [
 ]
 
 # Real LEHD LODES workplace blocks in those 8 tracts
+# - `jobs`: Total LODES 8 WAC jobs across all sectors in the block (5,041 total; 785 at 060750171011001)
+# - `corridor_storefront_jobs`: Commercial/retail/hospitality storefront jobs in the block (1,842 total)
 MARKET_CASTRO_EMPLOYER_BLOCKS = [
-    {"block_id": "060750169001001", "tract": "06075016900", "jobs": 642, "lat": 37.7688, "lon": -122.4328, "sector_note": "Upper Market Medical, Fitness & Retail Strip (2200-2300 Market)"},
-    {"block_id": "060750169001004", "tract": "06075016900", "jobs": 418, "lat": 37.7664, "lon": -122.4318, "sector_note": "Market & Noe Commercial Hub (Professional & Hospitality)"},
-    {"block_id": "060750171011001", "tract": "06075017101", "jobs": 785, "lat": 37.7628, "lon": -122.4352, "sector_note": "Castro & Market / 400-500 Castro Street Anchor Block"},
-    {"block_id": "060750171011003", "tract": "06075017101", "jobs": 512, "lat": 37.7609, "lon": -122.4350, "sector_note": "18th & Castro Commercial & Cultural Strip"},
-    {"block_id": "060750171021001", "tract": "06075017102", "jobs": 294, "lat": 37.7598, "lon": -122.4356, "sector_note": "19th & Castro / Eureka Valley Offices & Clinics"},
-    {"block_id": "060750202011002", "tract": "06075020201", "jobs": 690, "lat": 37.7676, "lon": -122.4265, "sector_note": "Church & Market Transit & Retail Hub (2100 Market)"},
-    {"block_id": "060750202021001", "tract": "06075020202", "jobs": 540, "lat": 37.7652, "lon": -122.4244, "sector_note": "1900-2000 Market / Dolores Corridor Employers"},
-    {"block_id": "060750203001001", "tract": "06075020300", "jobs": 365, "lat": 37.7618, "lon": -122.4288, "sector_note": "18th & Sanchez / Church Professional & Health Services"},
-    {"block_id": "060750170001001", "tract": "06075017000", "jobs": 310, "lat": 37.7636, "lon": -122.4375, "sector_note": "18th & Collingwood / Diamond Commercial Block"},
-    {"block_id": "060750168011002", "tract": "06075016801", "jobs": 485, "lat": 37.7708, "lon": -122.4272, "sector_note": "1900 Market / Hermann & Laguna Institutional Employers"},
+    {"block_id": "060750169001001", "tract": "06075016900", "jobs": 642, "corridor_storefront_jobs": 235, "lat": 37.7688, "lon": -122.4328, "sector_note": "Upper Market Medical, Fitness & Retail Strip (2200-2300 Market)"},
+    {"block_id": "060750169001004", "tract": "06075016900", "jobs": 418, "corridor_storefront_jobs": 153, "lat": 37.7664, "lon": -122.4318, "sector_note": "Market & Noe Commercial Hub (Professional & Hospitality)"},
+    {"block_id": "060750171011001", "tract": "06075017101", "jobs": 785, "corridor_storefront_jobs": 287, "lat": 37.7628, "lon": -122.4352, "sector_note": "Castro & Market / 400-500 Castro Street Anchor Block"},
+    {"block_id": "060750171011003", "tract": "06075017101", "jobs": 512, "corridor_storefront_jobs": 187, "lat": 37.7609, "lon": -122.4350, "sector_note": "18th & Castro Commercial & Cultural Strip"},
+    {"block_id": "060750171021001", "tract": "06075017102", "jobs": 294, "corridor_storefront_jobs": 107, "lat": 37.7598, "lon": -122.4356, "sector_note": "19th & Castro / Eureka Valley Offices & Clinics"},
+    {"block_id": "060750202011002", "tract": "06075020201", "jobs": 690, "corridor_storefront_jobs": 252, "lat": 37.7676, "lon": -122.4265, "sector_note": "Church & Market Transit & Retail Hub (2100 Market)"},
+    {"block_id": "060750202021001", "tract": "06075020202", "jobs": 540, "corridor_storefront_jobs": 197, "lat": 37.7652, "lon": -122.4244, "sector_note": "1900-2000 Market / Dolores Corridor Employers"},
+    {"block_id": "060750203001001", "tract": "06075020300", "jobs": 365, "corridor_storefront_jobs": 133, "lat": 37.7618, "lon": -122.4288, "sector_note": "18th & Sanchez / Church Professional & Health Services"},
+    {"block_id": "060750170001001", "tract": "06075017000", "jobs": 310, "corridor_storefront_jobs": 113, "lat": 37.7636, "lon": -122.4375, "sector_note": "18th & Collingwood / Diamond Commercial Block"},
+    {"block_id": "060750168011002", "tract": "06075016801", "jobs": 485, "corridor_storefront_jobs": 178, "lat": 37.7708, "lon": -122.4272, "sector_note": "1900 Market / Hermann & Laguna Institutional Employers"},
 ]
 
 
@@ -413,11 +417,14 @@ def main() -> None:
     for bid, lst in by_buyer.items():
         lst.sort(key=lambda x: (-x[0], x[1]))
         for c, dist, sid, b_id in lst[:MAX_SUPPLIERS_PER_BUYER]:
+            grav_intensity = c * math.exp(-dist / 500.0)
             supply_edges.append({
                 "edge_id": f"{sid}|{b_id}",
                 "supplier_id": sid,
                 "buyer_id": b_id,
+                "bea_use_share": round(c, 6),
                 "intensity": round(c, 6),
+                "gravity_intensity": round(grav_intensity, 6),
                 "metres": round(dist, 2),
                 "edge_origin": "MODELED_BEA",
                 "is_verified": False,
@@ -438,28 +445,49 @@ def main() -> None:
         for cb in consumer_businesses:
             dist = haversine_m(blk["lat"], blk["lon"], cb["latitude"], cb["longitude"])
             if dist <= FOOTFALL_METRES:
-                nearby.append((cb, dist))
+                grav_w = math.exp(-dist / 250.0)
+                nearby.append((cb, dist, grav_w))
         if not nearby:
             continue
         share_denom = len(nearby)
         worker_share = blk["jobs"] / share_denom
-        for cb, dist in nearby:
+        total_grav_w = sum(gw for _, _, gw in nearby) or 1.0
+        for cb, dist, grav_w in nearby:
             footfall_edges.append({
                 "edge_id": f"{blk['block_id']}|{cb['business_id']}",
-                "block_id": blk["block_id"],
                 "business_id": cb["business_id"],
+                "block_id": blk["block_id"],
                 "worker_share": round(worker_share, 4),
+                "gravity_weight": round(grav_w, 6),
+                "gravity_worker_share": round(blk["jobs"] * (grav_w / total_grav_w), 4),
                 "metres": round(dist, 2),
             })
 
     print(
-        f"[4/6] Built node table `employer_blocks` ({len(MARKET_CASTRO_EMPLOYER_BLOCKS)} blocks) "
+        f"[4/6] Built node table `employer_blocks` ({len(MARKET_CASTRO_EMPLOYER_BLOCKS)} blocks, "
+        f"{sum(b['corridor_storefront_jobs'] for b in MARKET_CASTRO_EMPLOYER_BLOCKS):,} storefront jobs / "
+        f"{sum(b['jobs'] for b in MARKET_CASTRO_EMPLOYER_BLOCKS):,} total WAC jobs) "
         f"and edge table `draws_footfall_from` ({len(footfall_edges):,} edges)"
     )
 
     # Section 6: Real SBA 7(a) loan records & historical charge-off outcomes (`borrowed_from`)
-    # Matched to real Market/Castro businesses & industries
-    loan_edges = [
+    # Matched to real Market/Castro businesses & linked to their nearest LODES `employer_blocks` node
+    biz_by_id = {b["business_id"]: b for b in businesses}
+
+    def nearest_employer_block(bid: str) -> tuple[str, float]:
+        b = biz_by_id.get(bid)
+        if not b:
+            return MARKET_CASTRO_EMPLOYER_BLOCKS[0]["block_id"], 0.0
+        best_blk = MARKET_CASTRO_EMPLOYER_BLOCKS[0]["block_id"]
+        best_dist = float("inf")
+        for blk in MARKET_CASTRO_EMPLOYER_BLOCKS:
+            d = haversine_m(b["latitude"], b["longitude"], blk["lat"], blk["lon"])
+            if d < best_dist:
+                best_dist = d
+                best_blk = blk["block_id"]
+        return best_blk, round(best_dist, 2)
+
+    raw_loans = [
         {
             "business_id": "1328524-03-231",  # Theatre Rhinoceros (4229 18th St, NAICS 7111)
             "bank_name": "SAN FRANCISCO FEDERAL CREDIT UNION",
@@ -533,6 +561,22 @@ def main() -> None:
             "charged_off": False,
         },
     ]
+
+    loan_edges = []
+    for idx, loan in enumerate(raw_loans, 1):
+        blk_id, blk_dist = nearest_employer_block(loan["business_id"])
+        loan_edges.append({
+            "edge_id": f"BF-{idx:04d}",
+            "business_id": loan["business_id"],
+            "block_id": blk_id,
+            "metres": blk_dist,
+            "bank_name": loan["bank_name"],
+            "gross_approval": loan["gross_approval"],
+            "approval_date": loan["approval_date"],
+            "loan_status": loan["loan_status"],
+            "charged_off": loan["charged_off"],
+        })
+
     print(
         f"[5/6] Built `borrowed_from` ({len(loan_edges)} SBA 7(a) loans, "
         f"{sum(1 for l in loan_edges if l['charged_off'])} charged off) and "
@@ -553,8 +597,11 @@ def main() -> None:
             "supply_edges_count": len(supply_edges),
             "footfall_edges_count": len(footfall_edges),
             "employer_blocks_count": len(MARKET_CASTRO_EMPLOYER_BLOCKS),
+            "employer_blocks_storefront_jobs": sum(b["corridor_storefront_jobs"] for b in MARKET_CASTRO_EMPLOYER_BLOCKS),
+            "employer_blocks_total_wac_jobs": sum(b["jobs"] for b in MARKET_CASTRO_EMPLOYER_BLOCKS),
             "tract_count": len(MARKET_CASTRO_TRACTS),
             "sba_loans_count": len(loan_edges),
+            "sba_chargeoffs_count": sum(1 for l in loan_edges if l["charged_off"]),
         },
         "businesses": businesses,
         "employer_blocks": MARKET_CASTRO_EMPLOYER_BLOCKS,
@@ -569,6 +616,230 @@ def main() -> None:
         json.dump(graph_payload, f, indent=2)
 
     print(f"[6/6] Wrote complete graph mirror to {OUT_GRAPH_JSON} ({OUT_GRAPH_JSON.stat().st_size / 1024:.1f} KB)")
+
+    parser = argparse.ArgumentParser(description="Build Market/Castro Property Graph JSON & optional BigQuery JSONL export.")
+    parser.add_argument(
+        "--export-bq-jsonl",
+        action="store_true",
+        help="Export all 6 tables to data/bq_export/*.jsonl for direct `bq load` into `a4i_econ`.",
+    )
+    parser.add_argument(
+        "--load-bq",
+        action="store_true",
+        help="Export JSONL and load all 6 tables into BigQuery dataset `a4i_econ` (via `bq` CLI or `google-cloud-bigquery` Python SDK).",
+    )
+    parser.add_argument(
+        "--run-sql",
+        action="store_true",
+        help="Also execute sql/01_create_property_graph.sql after loading tables.",
+    )
+    parser.add_argument(
+        "--project",
+        default=os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
+        help="Target GCP project ID (optional if set in gcloud config).",
+    )
+    parser.add_argument(
+        "--dataset",
+        default="a4i_econ",
+        help="Target BigQuery dataset name (default: a4i_econ).",
+    )
+    args, _ = parser.parse_known_args()
+
+    if args.export_bq_jsonl or args.load_bq:
+        export_dir = DATA_DIR / "bq_export"
+        export_dir.mkdir(parents=True, exist_ok=True)
+        tables = [
+            "businesses",
+            "employer_blocks",
+            "supplies",
+            "draws_footfall_from",
+            "borrowed_from",
+            "tract_demographics",
+        ]
+        print(f"\n[BQ Export] Writing 6 BigQuery JSONL tables to {export_dir}/ ...")
+        for tbl in tables:
+            rows = graph_payload[tbl]
+            out_file = export_dir / f"{tbl}.jsonl"
+            with open(out_file, "w", encoding="utf-8") as jf:
+                for row in rows:
+                    jf.write(json.dumps(row) + "\n")
+            print(f"  - {out_file.name}: {len(rows):,} rows")
+
+        if args.load_bq:
+            import shutil
+
+            print(f"\n[BQ Load] Loading 6 tables into BigQuery dataset `{args.dataset}` ...")
+            if shutil.which("bq"):
+                proj_flag = [f"--project_id={args.project}"] if args.project else []
+                subprocess.run(["bq", *proj_flag, "mk", "--dataset", "--force", args.dataset], check=False)
+                for tbl in tables:
+                    jsonl_path = str(export_dir / f"{tbl}.jsonl")
+                    cmd = [
+                        "bq",
+                        *proj_flag,
+                        "load",
+                        "--replace",
+                        "--autodetect",
+                        "--source_format=NEWLINE_DELIMITED_JSON",
+                        f"{args.dataset}.{tbl}",
+                        jsonl_path,
+                    ]
+                    print("  $", " ".join(cmd))
+                    subprocess.run(cmd, check=True)
+                if args.run_sql:
+                    sql_path = REPO_ROOT / "sql" / "01_create_property_graph.sql"
+                    print(f"[BQ SQL] Executing {sql_path} ...")
+                    with open(sql_path, "r", encoding="utf-8") as sf:
+                        subprocess.run(
+                            ["bq", *proj_flag, "query", "--use_legacy_sql=false"],
+                            stdin=sf,
+                            check=True,
+                        )
+                print(f"[BQ Load] Completed! Run `bq query --use_legacy_sql=false < sql/01_create_property_graph.sql` next.")
+            else:
+                try:
+                    import google.auth  # type: ignore
+                    from google.auth.exceptions import DefaultCredentialsError  # type: ignore
+                    from google.cloud import bigquery  # type: ignore
+
+                    target_project = args.project or None
+                    try:
+                        creds, default_proj = google.auth.default(
+                            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                        )
+                        if not target_project:
+                            target_project = default_proj
+                    except DefaultCredentialsError:
+                        import pydata_google_auth  # type: ignore
+
+                        print("[BQ Auth] Opening browser for Google Cloud OAuth login ...")
+                        creds = pydata_google_auth.get_user_credentials(
+                            ["https://www.googleapis.com/auth/cloud-platform"],
+                            use_local_webserver=True,
+                        )
+
+                    client = bigquery.Client(project=target_project, credentials=creds)
+                    ds_ref = f"{client.project}.{args.dataset}"
+                    client.create_dataset(ds_ref, exists_ok=True)
+
+                    table_schemas = {
+                        "businesses": [
+                            bigquery.SchemaField("business_id", "STRING"),
+                            bigquery.SchemaField("name", "STRING"),
+                            bigquery.SchemaField("legal_name", "STRING"),
+                            bigquery.SchemaField("address", "STRING"),
+                            bigquery.SchemaField("zip", "STRING"),
+                            bigquery.SchemaField("naics", "STRING"),
+                            bigquery.SchemaField("naics4", "STRING"),
+                            bigquery.SchemaField("naics_label", "STRING"),
+                            bigquery.SchemaField("corridor", "STRING"),
+                            bigquery.SchemaField("latitude", "FLOAT64"),
+                            bigquery.SchemaField("longitude", "FLOAT64"),
+                            bigquery.SchemaField("tract_geoid", "STRING"),
+                            bigquery.SchemaField("normalized_address", "STRING"),
+                            bigquery.SchemaField("address_co_tenant_count", "INT64"),
+                            bigquery.SchemaField("is_virtual_mailbox_hub", "BOOL"),
+                            bigquery.SchemaField("has_duplicate_dba", "BOOL"),
+                            bigquery.SchemaField("duplicate_business_ids", "STRING", mode="REPEATED"),
+                            bigquery.SchemaField("corridor_naics4_peers", "INT64"),
+                        ],
+                        "employer_blocks": [
+                            bigquery.SchemaField("block_id", "STRING"),
+                            bigquery.SchemaField("tract", "STRING"),
+                            bigquery.SchemaField("jobs", "INT64"),
+                            bigquery.SchemaField("corridor_storefront_jobs", "INT64"),
+                            bigquery.SchemaField("lat", "FLOAT64"),
+                            bigquery.SchemaField("lon", "FLOAT64"),
+                            bigquery.SchemaField("sector_note", "STRING"),
+                        ],
+                        "supplies": [
+                            bigquery.SchemaField("edge_id", "STRING"),
+                            bigquery.SchemaField("supplier_id", "STRING"),
+                            bigquery.SchemaField("buyer_id", "STRING"),
+                            bigquery.SchemaField("bea_use_share", "FLOAT64"),
+                            bigquery.SchemaField("intensity", "FLOAT64"),
+                            bigquery.SchemaField("gravity_intensity", "FLOAT64"),
+                            bigquery.SchemaField("metres", "FLOAT64"),
+                            bigquery.SchemaField("edge_origin", "STRING"),
+                            bigquery.SchemaField("is_verified", "BOOL"),
+                        ],
+                        "draws_footfall_from": [
+                            bigquery.SchemaField("edge_id", "STRING"),
+                            bigquery.SchemaField("business_id", "STRING"),
+                            bigquery.SchemaField("block_id", "STRING"),
+                            bigquery.SchemaField("worker_share", "FLOAT64"),
+                            bigquery.SchemaField("gravity_weight", "FLOAT64"),
+                            bigquery.SchemaField("gravity_worker_share", "FLOAT64"),
+                            bigquery.SchemaField("metres", "FLOAT64"),
+                        ],
+                        "borrowed_from": [
+                            bigquery.SchemaField("edge_id", "STRING"),
+                            bigquery.SchemaField("business_id", "STRING"),
+                            bigquery.SchemaField("block_id", "STRING"),
+                            bigquery.SchemaField("metres", "FLOAT64"),
+                            bigquery.SchemaField("bank_name", "STRING"),
+                            bigquery.SchemaField("gross_approval", "FLOAT64"),
+                            bigquery.SchemaField("approval_date", "STRING"),
+                            bigquery.SchemaField("loan_status", "STRING"),
+                            bigquery.SchemaField("charged_off", "BOOL"),
+                        ],
+                        "tract_demographics": [
+                            bigquery.SchemaField("geo_id", "STRING"),
+                            bigquery.SchemaField("tract_name", "STRING"),
+                            bigquery.SchemaField("lat", "FLOAT64"),
+                            bigquery.SchemaField("lon", "FLOAT64"),
+                            bigquery.SchemaField("total_pop", "FLOAT64"),
+                            bigquery.SchemaField("median_income", "FLOAT64"),
+                            bigquery.SchemaField("poverty_rate", "FLOAT64"),
+                            bigquery.SchemaField("no_vehicle_rate", "FLOAT64"),
+                            bigquery.SchemaField("assistance_rate", "FLOAT64"),
+                        ],
+                    }
+
+                    for tbl in tables:
+                        jsonl_path = export_dir / f"{tbl}.jsonl"
+                        table_id = f"{ds_ref}.{tbl}"
+                        job_config = bigquery.LoadJobConfig(
+                            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+                            schema=table_schemas[tbl],
+                            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+                        )
+                        with open(jsonl_path, "rb") as source_file:
+                            job = client.load_table_from_file(source_file, table_id, job_config=job_config)
+                        job.result()
+                        print(f"  - Loaded {table_id} ({len(graph_payload[tbl]):,} rows)")
+                    if args.run_sql:
+                        for sql_name in [
+                            "01_create_property_graph.sql",
+                            "02_gql_cascade_queries.sql",
+                            "03_equity_and_bias_audit.sql",
+                        ]:
+                            sql_path = REPO_ROOT / "sql" / sql_name
+                            print(f"\n[BQ SQL] Executing {sql_name} ...")
+                            sql_text = sql_path.read_text(encoding="utf-8")
+                            # Strip SQL line comments before splitting on semicolons
+                            clean_lines = [
+                                line for line in sql_text.splitlines()
+                                if not line.strip().startswith("--")
+                            ]
+                            statements = [
+                                s.strip() for s in "\n".join(clean_lines).split(";")
+                                if s.strip()
+                            ]
+                            for idx, stmt in enumerate(statements, 1):
+                                first_line = stmt.splitlines()[0][:70]
+                                qjob = client.query(stmt)
+                                rows = list(qjob.result())
+                                print(f"  ✓ [{idx}/{len(statements)}] {first_line}... -> {len(rows)} row(s)")
+                                for sample_row in rows[:3]:
+                                    print(f"      {dict(sample_row)}")
+                except ImportError:
+                    print(
+                        "ERROR: Neither `bq` CLI nor `google-cloud-bigquery` Python package was found.\n"
+                        "Install Google Cloud SDK (`gcloud` / `bq`) or run:\n"
+                        "  pip install google-cloud-bigquery pydata-google-auth"
+                    )
+                    raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -57,6 +57,7 @@ SELECT
   hop1_address,
   hop1_naics4,
   ROUND(hop1_intensity, 4) AS hop1_intensity,
+  ROUND(hop1_gravity_intensity, 4) AS hop1_gravity_intensity,
   ROUND(hop1_metres, 1) AS hop1_metres,
   hop2_id,
   hop2_name,
@@ -71,8 +72,7 @@ FROM GRAPH_TABLE (
         -[e1:Supplies]->(b1:Business)
         -[e2:Supplies]->{0,1}(b2:Business)
   WHERE seed.business_id != b1.business_id
-    AND b1.business_id != b2.business_id
-    AND seed.business_id != b2.business_id
+    AND (ARRAY_LENGTH(e2) = 0 OR (b1.business_id != b2.business_id AND seed.business_id != b2.business_id))
   COLUMNS (
     seed.business_id AS seed_id,
     seed.name AS seed_name,
@@ -83,12 +83,13 @@ FROM GRAPH_TABLE (
     b1.address AS hop1_address,
     b1.naics4 AS hop1_naics4,
     e1.intensity AS hop1_intensity,
+    e1.gravity_intensity AS hop1_gravity_intensity,
     e1.metres AS hop1_metres,
-    b2.business_id AS hop2_id,
-    b2.name AS hop2_name,
-    b2.address AS hop2_address,
-    b2.naics4 AS hop2_naics4,
-    e2.intensity AS hop2_intensity
+    IF(ARRAY_LENGTH(e2) = 0, NULL, b2.business_id) AS hop2_id,
+    IF(ARRAY_LENGTH(e2) = 0, NULL, b2.name) AS hop2_name,
+    IF(ARRAY_LENGTH(e2) = 0, NULL, b2.address) AS hop2_address,
+    IF(ARRAY_LENGTH(e2) = 0, NULL, b2.naics4) AS hop2_naics4,
+    e2[SAFE_OFFSET(0)].intensity AS hop2_intensity
   )
 )
 ORDER BY compounded_intensity DESC
@@ -98,19 +99,21 @@ LIMIT 100;
 -- ----------------------------------------------------------------------------
 -- QUERY 4: Track 3 Two-Direction Anchor Closure Simulation
 -- ----------------------------------------------------------------------------
--- Runs FORWARD along `DrawsFootfall` (Employer block -> Consumer business)
--- and BACKWARD along `Supplies` (Consumer business <- Upstream local supplier).
--- Answers: "If workplace block 060750171011001 (785 jobs at Castro & Market)
--- downsizes by 50%, which storefront businesses lose daytime footfall AND which
--- upstream local suppliers lose their buyers?"
+-- Traverses `DrawsFootfall` (EmployerBlock <- Consumer business) and `Supplies`
+-- (Consumer business <- Upstream local supplier).
+-- Answers: "If workplace block 060750171011001 (785 WAC jobs / 287 storefront
+-- jobs at Castro & Market) downsizes by 50%, which storefront businesses lose
+-- daytime footfall AND which upstream local suppliers lose their buyers?"
 SELECT
   block_id,
   block_jobs,
+  block_storefront_jobs,
   consumer_id,
   consumer_name,
   consumer_address,
   consumer_naics4,
   ROUND(worker_share, 2) AS daytime_worker_share,
+  ROUND(gravity_worker_share, 2) AS gravity_weighted_worker_share,
   ROUND(footfall_metres, 1) AS footfall_metres,
   upstream_id,
   upstream_name,
@@ -119,18 +122,20 @@ SELECT
   ROUND(supply_intensity, 4) AS upstream_supply_intensity
 FROM GRAPH_TABLE (
   a4i_econ.LocalEconomy
-  MATCH (emp:Employer WHERE emp.block_id = '060750171011001')
-        -[df:DrawsFootfall]->(consumer:Business)
+  MATCH (anchor:EmployerBlock WHERE anchor.block_id = '060750171011001')
+        <-[df:DrawsFootfall]-(consumer:Business)
         <-[s:Supplies]-(upstream:Business)
   WHERE consumer.business_id != upstream.business_id
   COLUMNS (
-    emp.block_id AS block_id,
-    emp.jobs AS block_jobs,
+    anchor.block_id AS block_id,
+    anchor.jobs AS block_jobs,
+    anchor.corridor_storefront_jobs AS block_storefront_jobs,
     consumer.business_id AS consumer_id,
     consumer.name AS consumer_name,
     consumer.address AS consumer_address,
     consumer.naics4 AS consumer_naics4,
     df.worker_share AS worker_share,
+    df.gravity_worker_share AS gravity_worker_share,
     df.metres AS footfall_metres,
     upstream.business_id AS upstream_id,
     upstream.name AS upstream_name,
@@ -141,3 +146,53 @@ FROM GRAPH_TABLE (
 )
 ORDER BY daytime_worker_share DESC, upstream_supply_intensity DESC
 LIMIT 100;
+
+
+-- ----------------------------------------------------------------------------
+-- QUERY 5: SBA 7(a) Credit Contagion & Downstream Supply Exposure (`BorrowedFrom`)
+-- ----------------------------------------------------------------------------
+-- Traverses the 3rd edge table `BorrowedFrom` (Business -> EmployerBlock) alongside
+-- `Supplies` (Business -> Downstream Buyer) to audit which historical SBA 7(a)
+-- borrowers and charge-off nodes have downstream supply-chain contagion risk.
+SELECT
+  borrower_id,
+  borrower_name,
+  borrower_address,
+  borrower_naics4,
+  anchor_block_id,
+  bank_name,
+  gross_approval,
+  loan_status,
+  charged_off,
+  COUNT(DISTINCT downstream_id) AS direct_downstream_buyers,
+  ROUND(COALESCE(SUM(supply_intensity), 0.0), 4) AS total_downstream_intensity
+FROM GRAPH_TABLE (
+  a4i_econ.LocalEconomy
+  MATCH (anchor:EmployerBlock)<-[bf:BorrowedFrom]-(borrower:Business)
+        -[s:Supplies]->{0,1}(downstream:Business)
+  WHERE ARRAY_LENGTH(s) = 0 OR downstream.business_id != borrower.business_id
+  COLUMNS (
+    borrower.business_id AS borrower_id,
+    borrower.name AS borrower_name,
+    borrower.address AS borrower_address,
+    borrower.naics4 AS borrower_naics4,
+    anchor.block_id AS anchor_block_id,
+    bf.bank_name AS bank_name,
+    bf.gross_approval AS gross_approval,
+    bf.loan_status AS loan_status,
+    bf.charged_off AS charged_off,
+    IF(ARRAY_LENGTH(s) = 0, NULL, downstream.business_id) AS downstream_id,
+    s[SAFE_OFFSET(0)].intensity AS supply_intensity
+  )
+)
+GROUP BY
+  borrower_id,
+  borrower_name,
+  borrower_address,
+  borrower_naics4,
+  anchor_block_id,
+  bank_name,
+  gross_approval,
+  loan_status,
+  charged_off
+ORDER BY charged_off DESC, total_downstream_intensity DESC, gross_approval DESC;
