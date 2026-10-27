@@ -5,12 +5,12 @@
 # FastAPI Backend) + Member 3 (Dual UI Consoles) against a target URL.
 #
 # Usage:
-#   bash scripts/test_production_integration.sh                           # defaults to http://localhost:8080
-#   bash scripts/test_production_integration.sh https://your-run-url.app  # tests live Cloud Run production URL
+#   bash scripts/test_production_integration.sh                           # defaults to https://remote-browser-vm1-187574395280.us-east1.run.app
+#   bash scripts/test_production_integration.sh http://localhost:8080     # tests local server
 # ==============================================================================
 set -euo pipefail
 
-TARGET_URL="${1:-${SERVICE_URL:-http://localhost:8080}}"
+TARGET_URL="${1:-${SERVICE_URL:-https://remote-browser-vm1-187574395280.us-east1.run.app}}"
 TARGET_URL="${TARGET_URL%/}"
 
 PYTHON_BIN="python3"
@@ -173,6 +173,33 @@ check(
     "M3.2 Market/Castro Deep-Dive UI + Leaflet Map + Workflow Tab (GET /market-castro)",
     s2 == 200 and "/grant-officer" in html_mc and "leaflet" in html_mc.lower() and "/api/workflow" in html_mc,
     f"HTTP {s2} ({len(html_mc):,} bytes), Leaflet map + Tab 5 (/api/workflow) + switcher verified",
+)
+
+print("\n--- 4. 10-CORRIDOR SF GRANT OFFICER API & QA GUARDRAIL VALIDATION ---")
+sc, cor = req_json("/api/corridors")
+check(
+    "M4.1 10-Corridor Registry & Metadata (/api/corridors)",
+    sc == 200 and len(cor.get("corridors", {})) == 10,
+    f"corridors_loaded={len(cor.get('corridors', {}))}",
+)
+sr, anl = req_json("/api/analyze?corridor=Central+Market")
+prim = anl.get("portfolio", {}).get("primary_recommendation", {})
+check(
+    "M4.2 Multi-Corridor Grant Analysis (/api/analyze?corridor=Central+Market)",
+    sr == 200 and bool(prim.get("name")),
+    f"primary={prim.get('name')} ({prim.get('business_id')}), score={prim.get('resilience_score')}",
+)
+sv, val = req_json("/api/qa-validate?corridor=Central+Market")
+check(
+    "M4.3 30-Point Section 12 Graph & QA Guardrail Suite (/api/qa-validate?corridor=Central+Market)",
+    sv == 200 and val.get("all_passed") is True and val.get("passed_checks", 0) == 30,
+    f"all_passed={val.get('all_passed')}, passed={val.get('passed_checks')}/{val.get('total_checks')}",
+)
+sg, ig = req_json("/api/init-graph", method="POST")
+check(
+    "M4.4 Live BigQuery Property Graph Provisioner (POST /api/init-graph)",
+    sg == 200 and "LocalEconomy" in str(ig.get("graph", "")),
+    f"status={ig.get('status')}, graph={ig.get('graph')}",
 )
 
 print("\n======================================================================================")

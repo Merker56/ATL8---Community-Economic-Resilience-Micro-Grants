@@ -9,7 +9,7 @@ set -euo pipefail
 PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-qwiklabs-gcp-03-46ba9aeed89b}"
 PROJECT_NUMBER="${PROJECT_NUMBER:-187574395280}"
 REGION="${GOOGLE_CLOUD_LOCATION:-us-east1}"
-SERVICE_NAME="${SERVICE_NAME:-atl8-grant-officer-agent}"
+SERVICE_NAME="${SERVICE_NAME:-remote-browser-vm1}"
 GAR_REPO="${GAR_REPO:-atl8}"
 GAR_IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${SERVICE_NAME}:latest"
 SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-${PROJECT_NUMBER}-compute@developer.gserviceaccount.com}"
