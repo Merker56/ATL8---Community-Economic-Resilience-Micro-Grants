@@ -112,6 +112,7 @@ async def serve_market_castro_ui():
 
 
 @app.get("/api/overview")
+@app.get("/api/workflow")
 @app.get("/api/portfolio")
 @app.get("/api/candidates")
 @app.get("/api/memo")
@@ -126,10 +127,15 @@ async def serve_market_castro_get_endpoints(request: Request):
 
 
 @app.post("/api/merchant-intake")
+@app.post("/api/workflow")
+@app.post("/api/reload")
 async def serve_market_castro_intake(request: Request):
     if mc_handle_post is not None:
-        body = await request.json()
-        status, payload = mc_handle_post("/api/merchant-intake", body)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        status, payload = mc_handle_post(request.url.path, body)
         return JSONResponse(status_code=status, content=payload)
     return JSONResponse(status_code=503, content={"error": "Market/Castro engine unavailable"})
 
