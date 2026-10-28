@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATL8 Challenge 03 — PRD & Technical Architecture (Data Layer, ADK Multi-Agent, Dual UI)</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #131b33;
+      --border: #26345e;
+      --text: #e8eefc;
+      --muted: #9eb0d9;
+      --accent: #38bdf8;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --violet: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 16, 32, 0.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .topbar-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      background: rgba(52, 211, 153, 0.16);
+      color: var(--emerald);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      background: #1a2547;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .btn-emerald {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--emerald);
+      color: #a7f3d0;
+    }
+    .container {
+      max-width: 1180px;
+      margin: 28px auto 64px;
+      padding: 0 24px;
+    }
+    .hero {
+      background: linear-gradient(145deg, #131b33 0%, #0f172a 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      margin-top: 32px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 21px;
+    }
+    h3 {
+      margin-top: 22px;
+      color: #c7d7fe;
+      font-size: 17px;
+    }
+    p, li { color: #dbe6ff; }
+    .callout {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 4px solid var(--accent);
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    .callout-warn {
+      background: rgba(251, 191, 36, 0.08);
+      border-left: 4px solid var(--amber);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 13.5px;
+      background: var(--panel);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th, td {
+      padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #192445;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    tr:last-child td { border-bottom: none; }
+    code, pre {
+      font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+      font-size: 12.5px;
+    }
+    code {
+      background: rgba(148, 163, 184, 0.16);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #7dd3fc;
+    }
+    pre {
+      background: #070b16;
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      color: #e2e8f0;
+    }
+    .mermaid-box {
+      background: #0d1428;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 18px 0;
+      overflow-x: auto;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .card h4 {
+      margin: 0 0 8px 0;
+      color: var(--emerald);
+      font-size: 15px;
+    }
+    @media print {
+      body { background: #fff; color: #111; }
+      .topbar { display: none; }
+      .hero, .card, table, pre, .mermaid-box {
+        background: #fff !important;
+        color: #111 !important;
+        border-color: #ccc !important;
+      }
+      p, li, td, th, h1, h2, h3, code { color: #111 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-title">
+      <span>📄 ATL8 Challenge 03 — Product Requirements Document & Full Architecture</span>
+      <span class="badge">Production 19/19 PASS</span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="downloadMarkdown()">⬇ Download PRD (.md)</button>
+      <button class="btn btn-emerald" onclick="downloadHTML()">⬇ Download Standalone (.html)</button>
+      <button class="btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <a class="btn" href="/market-castro">← Market/Castro Console</a>
+      <a class="btn" href="/grant-officer">← 10-Corridor Console</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Product Requirements Document (PRD) & Technical Architecture Specification</h1>
+      <p style="margin:4px 0 12px; color:var(--muted); font-size:15px;">
+        <strong>Agents for Impact (A4I) 2026 — Challenge 03:</strong> Community Economic Resilience & Micro-Grants (San Francisco Commercial Corridors)
+      </p>
+      <div class="callout">
+        <strong>Live Cloud Run Production Deployment (Verified 19/19 PASS):</strong><br/>
+        • <strong>Base URL:</strong> <a href="https://remote-browser-vm1-187574395280.us-east1.run.app" style="color:var(--accent)">https://remote-browser-vm1-187574395280.us-east1.run.app</a><br/>
+        • <strong>Console A (Market/Castro Deep-Dive):</strong> <a href="https://remote-browser-vm1-187574395280.us-east1.run.app/market-castro" style="color:var(--accent)">/market-castro</a> &nbsp;|&nbsp;
+        <strong>Console B (10-Corridor SF Workbench):</strong> <a href="https://remote-browser-vm1-187574395280.us-east1.run.app/grant-officer" style="color:var(--accent)">/grant-officer</a><br/>
+        • <strong>GCP Project / Region:</strong> <code>qwiklabs-gcp-03-46ba9aeed89b</code> (<code>us-east1</code>) &nbsp;|&nbsp;
+        <strong>BigQuery Property Graph:</strong> <code>a4i_econ.LocalEconomy</code> (<code>bigquery_live</code>)
+      </div>
+    </div>
+
+    <h2>1. Executive Summary & Official Judging Rubric Alignment</h2>
+    <p>
+      Municipal grant officers allocate scarce micro-grant stabilization pools (typically <code>$50,000</code> per corridor) under tight committee deadlines. Naive spreadsheets and raw graph degree centrality fail because they accidentally prioritize <strong>virtual mailbox agglomerations</strong> (<code>140</code> shell LLCs at <code>2261 Market St</code>), <strong>single-industry BEA concordance monopolies</strong> (<code>Primo</code>), or <strong>redundant grantees</strong> whose 2-hop downstream buyer subgraphs overlap by <code>90–100%</code>.
+    </p>
+    <p>
+      Our platform pairs a live <strong>BigQuery Property Graph (<code>a4i_econ.LocalEconomy</code>)</strong>, a <strong>Google ADK Multi-Agent System (<code>root_agent</code> + 3 specialized sub-agents)</strong>, a <strong>Managed BigQuery MCP Toolset</strong>, and a <strong>Dual-Console UI</strong> to generate an audit-ready <strong>7-Part Friday Committee Defense Memo</strong> and a <strong>Subgraph-Deduplicated Grant Portfolio</strong>.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Judging Criterion</th>
+          <th>Weight</th>
+          <th>Official Requirement & Traps Avoided</th>
+          <th>Verified Production Implementation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Technical Implementation (BigQuery GQL, ADK, MCP)</strong></td>
+          <td><strong>30 pts</strong></td>
+          <td>Genuine <code>GRAPH a4i_econ.LocalEconomy</code> GQL (<code>MATCH</code>, <code>NEXT</code>, <code>FILTER WHERE</code>, <code>ANY SHORTEST</code>, <code>TO_JSON(p)</code>), Google ADK multi-agent orchestration, Managed BigQuery MCP (<code>agent/tools.yaml</code>), and all 7 GQL syntax rules enforced.</td>
+          <td><code>sql/01_create_property_graph.sql</code>, <code>sql/02_gql_cascade_queries.sql</code>, <code>agent/agent.py</code>, <code>agent/grant_officer_agent/agent.py</code>, <code>agent/tools.yaml</code></td>
+        </tr>
+        <tr>
+          <td><strong>2. Data Hygiene, Entity Resolution & Bias Auditing</strong></td>
+          <td><strong>25 pts</strong></td>
+          <td>Corporate privacy filter, virtual mailbox penalty (<code>2261 Market St</code> [140], <code>584 Castro St</code> [21] at <code>0.55x</code>), BEA mechanical bias audit (<code>78%</code> food/mfg vs. <code>0%</code> personal services), <code>LPAD(geo_id, 11, '0')</code> CA FIPS join, and zero race/gender/age inputs.</td>
+          <td><code>sql/03_equity_and_bias_audit.sql</code>, <code>audit_corridor_equity_and_bias</code>, 30-Point Section 12 QA Suite (<code>GET /api/qa-validate</code> -> <code>30/30 PASS</code>)</td>
+        </tr>
+        <tr>
+          <td><strong>3. Economic Reasoning & Portfolio Defense</strong></td>
+          <td><strong>25 pts</strong></td>
+          <td>Models survival shift (&Delta;P), substitutability discount, hub-trap rejection (<code>Theatre Rhinoceros</code> <code>14.69</code> jobs saved vs. <code>Cafe Du Nord</code> <code>9.55</code> jobs saved), and greedy 2-hop subgraph deduplication (<code>Theatre Rhinoceros</code> + <code>Canela</code> = <code>21</code> unique nodes, <code>13</code> physical storefronts).</td>
+          <td><code>generate_friday_grant_memo</code>, <code>optimize_corridor_portfolio</code>, <code>compare_grant_candidates</code></td>
+        </tr>
+        <tr>
+          <td><strong>4. Grant Officer UX & Geospatial Storytelling</strong></td>
+          <td><strong>20 pts</strong></td>
+          <td>Dual-console UI (<code>/market-castro</code> + <code>/grant-officer</code>), interactive Leaflet.js geographic cascade map + SVG <code>TO_JSON(p)</code> topology, Track 3 bi-directional anchor closure shock, and live 3-sub-agent workflow trace.</td>
+          <td><code>agent/static/index.html</code>, <code>agent/static/grant_officer.html</code>, <code>agent/main.py</code></td>
+        </tr>
+        <tr>
+          <td><strong>5. "What's Next" Bonus Deliverable</strong></td>
+          <td><strong>+10 pts</strong></td>
+          <td>Upgrades modeled BEA supply edges to <code>user_verified=TRUE</code> during merchant grant intake, emits BigQuery <code>MERGE INTO a4i_econ.supplies</code> DML, and recomputes cascading jobs saved live (<code>14.69</code> &rarr; <code>40.98</code>).</td>
+          <td><code>POST /api/merchant-intake</code> &amp; <code>POST /api/intake</code> (<code>add_verified_merchant_supplier</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>2. Data Layer Architecture (Member 1)</h2>
+    <p>
+      The data pipeline (<code>scripts/build_local_corridor.py</code> and <code>agent/grant_officer_agent/data_engine.py</code>) integrates six authoritative federal and municipal datasets into <code>qwiklabs-gcp-03-46ba9aeed89b.a4i_econ.LocalEconomy</code> and the deterministic snapshot <code>data/market_castro_graph.json</code>:
+    </p>
+
+    <div class="mermaid-box">
+      <pre class="mermaid">
+flowchart LR
+    subgraph Sources["6 Federal & Municipal Public Datasets"]
+        D1["1. DataSF Registered Businesses\n(Socrata g8m3-pdis · 1,566 raw -> 327 active)"]
+        D2["2. BEA 2017 Input-Output Use Tables\n(405 Industries -> NAICS4 Concordance)"]
+        D3["3. US Census LEHD LODES 8 WAC\n(ca_wac_S000_JT00_2021 · C000 Jobs)"]
+        D4["4. US Census ACS 5-Year (2022)\n(B17001 Poverty, B08201 No-Vehicle, B19058 Assist)"]
+        D5["5. US SBA 7(a) FOIA Loan Records\n(Historical Approvals & CHGOFF Charge-Offs)"]
+        D6["6. US Census TIGER/Line Shapefiles\n(2023 Tracts, Blocks & Haversine Geometry)"]
+    end
+
+    subgraph Hygiene["Entity Resolution & Guardrail Pipeline"]
+        H1["Corporate Privacy Filter\n(Strip sole proprietors / home addresses)"]
+        H2["Virtual Mailbox Hub Detector\n(Flag 2261 Market St [140] & 584 Castro St [21])"]
+        H3["11-Char FIPS LPAD Guard\n(LPAD(CAST(geo_id AS STRING), 11, '0'))"]
+        H4["Responsible AI Input Filter\n(Zero race, gender, or age columns)"]
+    end
+
+    subgraph BQGraph["BigQuery Property Graph: a4i_econ.LocalEconomy"]
+        N1[("NODE: businesses\n(327 storefronts, 62 NAICS4)")]
+        N2[("NODE: employer_blocks\n(18 workplace blocks)")]
+        E1[("EDGE: supplies\n(1,199 directed B2B edges)")]
+        E2[("EDGE: draws_footfall_from\n(677 workplace->retail edges)")]
+        E3[("EDGE: borrowed_from\n(SBA 7a loan & CHGOFF edges)")]
+        R1[("TABLE: tract_demographics\n(8 ACS Census Tracts)")]
+    end
+
+    D1 & D6 --> H1 --> H2 --> N1
+    D2 --> E1
+    D3 & D6 --> N2 --> E2
+    D4 --> H3 & H4 --> R1
+    D5 --> E3
+    N1 --> E1 & E2 & E3
+      </pre>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>BigQuery Table / Graph Element</th>
+          <th>Primary Key &amp; Role</th>
+          <th>Engineering Rules &amp; Constants</th>
+          <th>Market/Castro Volume</th>
+          <th>Evidence Classification</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>a4i_econ.businesses</code></td>
+          <td><code>KEY (business_id)</code><br/><code>LABEL Business</code></td>
+          <td>Active corporate tax filings; co-tenant count &ge; 15 flagged as <code>is_virtual_mailbox = TRUE</code> (<code>2261 Market St</code> = 140; <code>584 Castro St</code> = 21).</td>
+          <td><code>327</code> businesses across <code>62</code> NAICS4 sectors</td>
+          <td><strong>REAL</strong> (DataSF municipal registry)</td>
+        </tr>
+        <tr>
+          <td><code>a4i_econ.supplies</code></td>
+          <td><code>KEY (edge_id)</code><br/><code>LABEL Supplies</code></td>
+          <td><code>MAX_SUPPLY_METRES = 1,200m</code>, <code>SUPPLY_COEFF_FLOOR = 0.005</code>, <code>GENERIC_SUPPLIER_PCTL = 0.90</code>. Weight: <code>bea_coeff * exp(-metres/500)</code>.</td>
+          <td><code>1,199</code> directed B2B edges</td>
+          <td><strong>MODELED</strong> (BEA IO + Haversine) &rarr; <strong>REAL</strong> via Merchant Intake</td>
+        </tr>
+        <tr>
+          <td><code>a4i_econ.employer_blocks</code></td>
+          <td><code>KEY (block_id)</code><br/><code>LABEL EmployerBlock</code></td>
+          <td>LEHD LODES 8 WAC <code>C000</code> workplace jobs. Top anchor: Block <code>060750207003000</code> (<code>785</code> jobs).</td>
+          <td><code>18</code> workplace Census blocks</td>
+          <td><strong>REAL</strong> (Census LEHD payroll counts)</td>
+        </tr>
+        <tr>
+          <td><code>a4i_econ.draws_footfall_from</code></td>
+          <td><code>KEY (edge_id)</code><br/><code>LABEL DrawsFootfall</code></td>
+          <td><code>FOOTFALL_METRES = 500m</code> walking radius. Gravity share: <code>jobs * exp(-metres/250)</code>.</td>
+          <td><code>677</code> workplace-to-storefront edges</td>
+          <td><strong>MODELED</strong> (Spatial gravity allocation)</td>
+        </tr>
+        <tr>
+          <td><code>a4i_econ.borrowed_from</code></td>
+          <td>Loan performance edge table</td>
+          <td>SBA 7(a) FOIA approvals &amp; historical <code>CHGOFF</code> charge-offs (<code>Castro Tarts Cafe</code> <code>$50k</code>, <code>Jake's Castro Kitchen</code> <code>$85k</code>).</td>
+          <td><code>9</code> corridor loans (<code>$1,370,500</code>, <code>2</code> charge-offs)</td>
+          <td><strong>REAL</strong> (Federal SBA FOIA ground truth)</td>
+        </tr>
+        <tr>
+          <td><code>a4i_econ.tract_demographics</code></td>
+          <td><code>LPAD(geo_id, 11, '0')</code> relational table</td>
+          <td>ACS 5-Year poverty (<code>B17001</code>), car-free (<code>B08201</code>), public assistance (<code>B19058</code>). Zero race/gender/age columns.</td>
+          <td><code>8</code> tracts in Market/Castro (<code>10</code> SF corridors)</td>
+          <td><strong>REAL</strong> (US Census ACS 5-Year)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Full System & Google ADK Multi-Agent Architecture (Member 2)</h2>
+    <div class="mermaid-box">
+      <pre class="mermaid">
+flowchart TB
+    subgraph Client["Dual-Console Web Client (Browser)"]
+        UI1["/market-castro\nMarket/Castro Deep-Dive Defense Console\n(Leaflet Map + SVG Topology + 5 Tabs)"]
+        UI2["/grant-officer\n10-Corridor SF Grant Officer Workbench\n(3 Tracks + 30-Point Section 12 QA Suite)"]
+    end
+
+    subgraph CloudRun["Google Cloud Run (remote-browser-vm1 · us-east1 · min-instances=1)"]
+        FastAPI["Unified FastAPI Server (agent/main.py + agent/server.py)"]
+
+        subgraph ADK["Google ADK Multi-Agent Orchestrator (gemini-2.5-flash)"]
+            Root["Root Agent: grant_officer_agent / market_castro_grant_advisor"]
+            SA1["Sub-Agent 1: graph_cascade_analyst\n(1-2 Hop GQL Cascades, Track 3 Anchor Shock, TO_JSON)"]
+            SA2["Sub-Agent 2: equity_bias_auditor\n(3-Step Equity Audit, Virtual Hub Penalty, +10 Bonus Intake)"]
+            SA3["Sub-Agent 3: grant_portfolio_defender\n(7-Part Friday Memo, Hub Trap Refusal, Subgraph Dedup)"]
+            Root --> SA1 & SA2 & SA3
+        end
+
+        subgraph Engine["Hybrid Graph Execution Layer"]
+            MCP["Managed BigQuery MCP Toolset\n(agent/tools.yaml · 5 bigquery-sql tools)"]
+            LocalEng["Deterministic In-Memory Property Graph Engine\n(agent/tools.py & grant_officer_agent/data_engine.py)"]
+        end
+
+        FastAPI --> Root
+        FastAPI --> LocalEng
+        SA1 & SA2 & SA3 --> MCP & LocalEng
+    end
+
+    subgraph GCP["Google Cloud Platform (qwiklabs-gcp-03-46ba9aeed89b)"]
+        BQ[("BigQuery Dataset: a4i_econ\nProperty Graph: a4i_econ.LocalEconomy\n6 Live Tables (bigquery_live)")]
+        Vertex["Vertex AI / Gemini API\n(gemini-2.5-flash)"]
+    end
+
+    UI1 & UI2 <-->|"REST JSON APIs (20+ Endpoints)"| FastAPI
+    MCP & LocalEng <-->|"BigQuery GQL / DML MERGE"| BQ
+    Root <-->|"ADK LLM Tool Calling"| Vertex
+      </pre>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4>Sub-Agent 1: <code>graph_cascade_analyst</code></h4>
+        <p>Executes 1-to-2 hop <code>ANY SHORTEST</code> GQL supply cascades, serializes <code>TO_JSON(p)</code> paths with <code>lat</code>/<code>lon</code> coordinates, filters candidates into the <strong>5–25 2-Hop Sweet-Spot Band</strong>, and simulates <strong>Track 3 Bi-Directional Anchor Closure Shocks</strong> (Block <code>060750207003000</code>, <code>785</code> jobs &rarr; <code>106</code> storefronts &rarr; <code>36</code> upstream suppliers hurt).</p>
+      </div>
+      <div class="card">
+        <h4>Sub-Agent 2: <code>equity_bias_auditor</code></h4>
+        <p>Runs the <strong>3-Step Equity &amp; BEA Mechanical Bias Audit</strong>: verifies 11-char ACS tracts with <code>0</code> race/gender/age inputs, flags BEA's <code>78%</code> food/mfg concentration vs. <code>0%</code> personal services leaf nodes (recommending a <code>15%</code> non-graph direct-relief reserve), penalizes virtual mailbox hubs (<code>0.55x</code>), and records <code>+10 Bonus</code> Merchant Supplier Intake edges.</p>
+      </div>
+      <div class="card">
+        <h4>Sub-Agent 3: <code>grant_portfolio_defender</code></h4>
+        <p>Synthesizes the <strong>7-Part Friday Committee Defense Memo</strong>: proves why Sweet-Spot Keystone <strong>Theatre Rhinoceros</strong> (<code>14.69</code> cascading jobs saved, <code>$1,701.84</code>/job) beats 38-edge Hub Trap <strong>Cafe Du Nord</strong> (<code>9.55</code> jobs saved, <code>$2,618.23</code>/job), and optimizes the <code>$50,000</code> portfolio into <strong>Theatre Rhinoceros + Canela</strong> (<code>21</code> unique 2-hop nodes, <code>13</code> physical storefronts, <code>27.80</code> jobs saved).</p>
+      </div>
+      <div class="card">
+        <h4>Managed BigQuery MCP (<code>agent/tools.yaml</code>)</h4>
+        <p>Defines <code>5</code> parameterized <code>bigquery-sql</code> MCP tools (<code>mcp_discover_sweet_spot_candidates</code>, <code>mcp_trace_2hop_supply_cascade</code>, <code>mcp_simulate_anchor_closure_shock</code>, <code>mcp_audit_corridor_equity_and_bias</code>, <code>mcp_verify_merchant_supplier_edge</code>) bound to <code>qwiklabs-gcp-03-46ba9aeed89b.a4i_econ.LocalEconomy</code>.</p>
+      </div>
+    </div>
+
+    <h2>4. User Interface Architecture & Dual-Console Specification (Member 3)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Console A: Market/Castro Deep-Dive (<code>/market-castro</code>)</h4>
+        <ul>
+          <li><strong>Tab 1 (7-Part Defense Memo &amp; Map):</strong> Full 7-Part Friday Memo, interactive <strong>Leaflet.js Geographic Cascade Map</strong> (<code>lat</code>/<code>lon</code> markers + directional polylines), interactive <strong>SVG <code>TO_JSON(p)</code> Topology</strong>, and <strong>Subgraph-Deduplicated Portfolio Optimizer</strong>.</li>
+          <li><strong>Tab 2 (Equity &amp; Bias Audit):</strong> Keystone Band table, Disqualified Virtual Mailbox &amp; Monopoly Traps, 11-Char ACS Tract Vulnerability, Duplicate DBA Resolution, and Real SBA 7(a) Charge-Off Ground Truth.</li>
+          <li><strong>Tab 3 (Track 3 Anchor Shock):</strong> Two-direction GQL simulator (<code>DrawsFootfall</code> &rarr; <code>Supplies</code>).</li>
+          <li><strong>Tab 4 (+10 Bonus Intake &amp; Chat):</strong> Live Merchant Supplier Intake form (emits BigQuery <code>MERGE</code> DML, lifting jobs saved <code>14.69</code> &rarr; <code>40.98</code>) + Grounded ADK Chat.</li>
+          <li><strong>Tab 5 (⚡ 3-Sub-Agent Workflow):</strong> Live sequential execution trace across all 3 ADK sub-agents (<code>~254 ms</code>).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Console B: 10-Corridor SF Workbench (<code>/grant-officer</code>)</h4>
+        <ul>
+          <li><strong>10 SF Commercial Corridors:</strong> <code>Central Market</code>, <code>Mission / Calle 24</code>, <code>Chinatown</code>, <code>Bayview / Third Street</code>, <code>Excelsior</code>, <code>Castro / Upper Market</code>, <code>Haight-Ashbury</code>, <code>Inner Sunset</code>, <code>North Beach</code>, <code>Japantown / Fillmore</code>.</li>
+          <li><strong>3 Stabilization Tracks:</strong> Track 1 (Main Street Storefront), Track 2 (Micro-Producer / Commissary), Track 3 (Anchor Institution Closure).</li>
+          <li><strong>30-Point Section 12 QA Validation Suite (<code>/api/qa-validate</code>):</strong> Verifies 24 Data &amp; Graph Element Integrity checks + 6 BigQuery GQL Syntax &amp; Responsible AI Guardrail checks (<code>30/30 PASS</code>).</li>
+          <li><strong>One-Click Live BigQuery Graph Provisioner (<code>POST /api/init-graph</code>):</strong> Executes <code>CREATE OR REPLACE PROPERTY GRAPH a4i_econ.LocalEconomy</code> live in BigQuery.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>5. Live Cloud Run Production Validation Summary (19/19 PASS)</h2>
+    <pre>======================================================================================
+ ATL8 PRODUCTION INTEGRATION VERIFICATION (MEMBER 1 + MEMBER 2 + MEMBER 3)
+ Target Endpoint : https://remote-browser-vm1-187574395280.us-east1.run.app
+======================================================================================
+  [PASS] M1.1 Health &amp; Graph Snapshot Contract (/api/health) -&gt; businesses=327, supplies=1199, footfall=677
+  [PASS] M1.2 11-Char LPAD Tract GEOIDs &amp; SQL DDL/GQL Scripts -&gt; tracts=8, all 3 SQL scripts verified
+  [PASS] M1.3 BigQuery Dataset &amp; Property Graph Status -&gt; connected=True, mode=bigquery_live, graph=a4i_econ.LocalEconomy
+  [PASS] M1.4 Zero-Downtime Member 1 Graph Hot-Reload (POST /api/reload) -&gt; reloaded 327 businesses &amp; 1199 Supplies edges
+  [PASS] M2.1 Google ADK Root Agent + 3 Sub-Agents (/api/agent-info) -&gt; sub_agents=3, tools=15, corridors=10
+  [PASS] M2.2 Managed BigQuery MCP &amp; Sub-Agent Hierarchy (/api/hierarchy + /api/mcp-status) -&gt; mcp_tools=5
+  [PASS] M2.3 7-Part Friday Memo + Geo Cascade + TO_JSON(p) (/api/memo) -&gt; jobs_saved=14.69, cost_per_job=$1701.84
+  [PASS] M2.4 Subgraph-Deduplicated Portfolio Optimizer (/api/portfolio) -&gt; ['Theatre Rhinoceros', 'Canela'], unique_2hop=21
+  [PASS] M2.5 Track 3 Bi-Directional Anchor Closure Shock (/api/anchor-shock) -&gt; anchor_jobs=785, storefronts=106, upstream=36
+  [PASS] M2.6 3-Step Equity &amp; BEA Mechanical Bias Audit (/api/equity-audit) -&gt; tracts=8, bea_sectors=2, virtual_hubs=2
+  [PASS] M2.7 +10 Bonus Merchant Supplier Intake &amp; BQ MERGE DML (POST /api/merchant-intake) -&gt; jobs_after=40.98
+  [PASS] M2.8 3-Sub-Agent Sequential Pipeline Trace (/api/workflow) -&gt; 3 sub-agents traced in 253.78ms
+  [PASS] M2.9 Grounded Multi-Agent Chat (POST /api/chat) -&gt; engine=adk-graph-tool-engine, tool=compare_grant_candidates
+  [PASS] M3.1 10-Corridor Grant Officer UI (GET /grant-officer) -&gt; HTTP 200 (64,956 bytes)
+  [PASS] M3.2 Market/Castro Deep-Dive UI + Leaflet Map + Workflow Tab (GET /market-castro) -&gt; HTTP 200 (89,499 bytes)
+  [PASS] M4.1 10-Corridor Registry &amp; Metadata (/api/corridors) -&gt; corridors_loaded=10
+  [PASS] M4.2 Multi-Corridor Grant Analysis (/api/analyze?corridor=Central+Market) -&gt; Merchant Roots &amp; Commissary LLC (76.2)
+  [PASS] M4.3 30-Point Section 12 Graph &amp; QA Guardrail Suite (/api/qa-validate) -&gt; all_passed=True, passed=30/30
+  [PASS] M4.4 Live BigQuery Property Graph Provisioner (POST /api/init-graph) -&gt; status=created, graph=qwiklabs-gcp-03-46ba9aeed89b.a4i_econ.LocalEconomy
+======================================================================================
+ SUMMARY: 19 PASSED, 0 FAILED (out of 19 production integration checks)
+======================================================================================</pre>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "dark" });
+
+    async function downloadMarkdown() {
+      try {
+        const res = await fetch("/api/download/prd.md");
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "ATL8_Challenge03_PRD_and_Architecture.md";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          return;
+        }
+      } catch (e) {}
+      window.location.href = "/api/download/prd.md";
+    }
+
+    function downloadHTML() {
+      const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ATL8_Challenge03_PRD_and_Architecture.html";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

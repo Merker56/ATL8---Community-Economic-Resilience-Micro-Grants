@@ -119,6 +119,40 @@ async def serve_market_castro_ui():
     return HTMLResponse("<h1>Market/Castro Defense Console loading...</h1>")
 
 
+@app.get("/prd", response_class=HTMLResponse)
+async def serve_prd_viewer():
+    prd_html = STATIC_DIR / "prd.html"
+    if prd_html.exists():
+        return FileResponse(str(prd_html))
+    return HTMLResponse("<h1>PRD Document loading...</h1>")
+
+
+@app.get("/api/download/prd.md")
+async def download_prd_markdown():
+    prd_md = STATIC_DIR / "PRD_AND_TECHNICAL_DESIGN.md"
+    if not prd_md.exists():
+        prd_md = ROOT_DIR / "docs" / "PRD_AND_TECHNICAL_DESIGN.md"
+    if prd_md.exists():
+        return FileResponse(
+            str(prd_md),
+            media_type="text/markdown; charset=utf-8",
+            filename="ATL8_Challenge03_PRD_and_Architecture.md",
+        )
+    return JSONResponse(status_code=404, content={"error": "PRD markdown not found"})
+
+
+@app.get("/api/download/prd.html")
+async def download_prd_html():
+    prd_html = STATIC_DIR / "prd.html"
+    if prd_html.exists():
+        return FileResponse(
+            str(prd_html),
+            media_type="text/html; charset=utf-8",
+            filename="ATL8_Challenge03_PRD_and_Architecture.html",
+        )
+    return JSONResponse(status_code=404, content={"error": "PRD HTML not found"})
+
+
 @app.get("/api/overview")
 @app.get("/api/workflow")
 @app.get("/api/hierarchy")
